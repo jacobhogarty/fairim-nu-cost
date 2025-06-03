@@ -88,7 +88,7 @@ To get a local copy up and running, follow these simple steps.
 Ensure you have Python 3.12 installed. You can verify this by running:
 
 ```bash
-python3 - -version
+python3 --version
 ```
 
 It's recommended to use a virtual environment to manage dependencies:
