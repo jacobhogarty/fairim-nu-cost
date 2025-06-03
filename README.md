@@ -66,12 +66,42 @@ effectively.
 
 ### Built With
 
-* ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-* ![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)
-* ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)
-* ![SciPy](https://img.shields.io/badge/SciPy-%230C55A5.svg?style=for-the-badge&logo=scipy&logoColor=%white)
-* ![Pytest](https://img.shields.io/badge/pytest-%23ffffff.svg?style=for-the-badge&logo=pytest&logoColor=2f9fe3)
-* ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+```mermaid
+graph TD
+    Python --> NumPy["NumPy (Numerical computing)"]
+    Python --> Pandas["Pandas (Data manipulation)"]
+    Python --> SciPy["SciPy (Scientific computing)"]
+    Python --> Pytest["Pytest (Testing framework)"]
+    Python --> NetworkX["NetworkX (Graph analysis)"]
+    Python --> GitHub_Actions["GitHub Actions (CI/CD)"]
+    
+    %% Core scientific computing dependencies
+    NumPy --> SciPy
+    NumPy --> Pandas
+    
+    %% Influence maximisation specific relationships
+    SciPy -->|optimisation| NetworkX
+    NetworkX -->|graph algorithms| Fair_Influence_Maximisation
+    Pandas -->|data handling| Fair_Influence_Maximisation
+    
+    %% Testing and CI/CD
+    Pytest -->|testing| Fair_Influence_Maximisation
+    Pytest --> GitHub_Actions
+    GitHub_Actions -->|automated testing| Fair_Influence_Maximisation
+    
+    style Python fill:#2b5b84,color:white,stroke:#1a3653
+    style NumPy fill:#4e79a7,color:white,stroke:#2c4a6b
+    style Pandas fill:#e15759,color:white,stroke:#a83a3c
+    style SciPy fill:#76b7b2,color:#333,stroke:#4f8b87
+    style Pytest fill:#59a14f,color:white,stroke:#3a7532
+    style NetworkX fill:#edc948,color:#333,stroke:#c9a932
+    style GitHub_Actions fill:#b07aa1,color:white,stroke:#7d5270
+    style Fair_Influence_Maximisation fill:#ff9da7,color:#333,stroke:#d97b87
+    
+    classDef default stroke-width:2px,font-family:Helvetica
+    linkStyle default stroke:#666,stroke-width:1.5px
+    
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
