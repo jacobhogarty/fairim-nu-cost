@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/Cabin320/fair_influence_maximisation">
-    <img src="images/uow_logo.png" alt="Logo" width="250" height="250">
+    <img src="images/uow_logo.png" alt="Logo" width="250" height="300">
   </a>
 
 <h3 align="center">Fair Influence Maximisation with Non-Uniform Costs in Social Networks</h3>
