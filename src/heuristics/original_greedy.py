@@ -19,7 +19,7 @@ def greedy(
     Args:
         graph: Network graph with nodes and edges
         k: Number of seed nodes
-        p: Dictionary mapping edges (node1, node2) to activation costs
+        p: Probability that an active node successfully activates one of its neighbors
         monte_carlo_sim: Number of Monte Carlo simulations
 
     Returns:
@@ -32,14 +32,14 @@ def greedy(
 
         # Loop over nodes that are not yet in seed set to find the biggest marginal gain
         best_spread = 0
-        for j in set(range(graph.vcount())) - set(seed_set):
+        for candidate_node in set(range(graph.vcount())) - set(seed_set):
 
             # Get the spread
-            s = independent_cascade(graph, seed_set + [j], p, monte_carlo_sim)
+            spread = independent_cascade(graph, seed_set + [candidate_node], p, monte_carlo_sim)
 
             # Update the winning node and spread so far
-            if s > best_spread:
-                best_spread, node = s, j
+            if spread > best_spread:
+                best_spread, node = spread, candidate_node
 
         # Add the selected node to the seed set
         seed_set.append(node)

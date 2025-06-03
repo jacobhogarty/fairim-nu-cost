@@ -35,7 +35,7 @@ def independent_cascade(
             # Collect all candidate edges with their costs from currently active nodes
             candidates = []
             for node in new_active:
-                for neighbor in graph.neighbors(node, mode='out'):
+                for neighbor in graph.neighbors(node):
                     if neighbor not in activated_nodes:
                         edge = (node, neighbor)
                         cost = activation_costs.get(edge, float('inf'))
