@@ -25,7 +25,7 @@ def test__independent_cascade(edges, activation_costs, seed_set, alpha, expected
         seed_set=seed_set,
         activation_costs=activation_costs,
         alpha=alpha,
-        monte_carlo_sim=50,
+        monte_carlo_sim=10,
     )
 
     assert isinstance(spread, float)

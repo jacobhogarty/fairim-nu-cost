@@ -3,14 +3,15 @@ from numpy import (
     exp,
     mean,
 )
+from networkx import Graph
 
 
 def independent_cascade(
-        graph,
-        seed_set,
-        activation_costs,
-        alpha=2.0,
-        monte_carlo_sim=1000,
+        graph: Graph,
+        seed_set: list[str],
+        activation_costs: dict[tuple[str, str], float],
+        alpha: float = 2.0,
+        monte_carlo_sim: int = 1000,
 ):
     """
     Independent cascade model that biases propagation toward cheaper edges.

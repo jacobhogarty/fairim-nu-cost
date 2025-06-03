@@ -1,15 +1,16 @@
 from time import (
     time,
 )
-
+from networkx import Graph
 from src import independent_cascade
 
 
 def greedy(
-        graph,
-        k,
-        p=0.1,
-        monte_carlo_sim=1000,
+        graph: Graph,
+        k: int,
+        activation_costs: dict[tuple[str, str], float],
+        alpha: float = 2.0,
+        monte_carlo_sim: int = 1000,
 ):
     """
     Original greedy heuristic proposed by Kempe et al. in 2003. This  finds the node with the biggest spread, adds it
@@ -19,33 +20,46 @@ def greedy(
     Args:
         graph: Network graph with nodes and edges
         k: Number of seed nodes
-        p: Probability that an active node successfully activates one of its neighbors
-        monte_carlo_sim: Number of Monte Carlo simulations
+        activation_costs: Dictionary mapping edges to activation costs.
+        alpha: Sensitivity to cost in propagation (higher = more cost-averse).
+        monte_carlo_sim: Number of Monte Carlo simulations.
 
     Returns:
-        Optimal seed set, resulting spread, time for each iteration
+        seed_set: List of selected seed nodes.
+        spreads: List of estimated spreads at each iteration.
+        timelapse: Time taken for each iteration.
     """
-    seed_set, spread, timelapse, start_time = [], [], [], time()
+    seed_set, spreads, timelapse, start_time = [], [], [], time()
 
     # Find k nodes with the largest marginal gain
     for _ in range(k):
 
         # Loop over nodes that are not yet in seed set to find the biggest marginal gain
         best_spread = 0
-        for candidate_node in set(range(graph.vcount())) - set(seed_set):
+        best_node = None
+
+        for candidate_node in set(graph.nodes()) - set(seed_set):
 
             # Get the spread
-            spread = independent_cascade(graph, seed_set + [candidate_node], p, monte_carlo_sim)
+            estimated_spread = independent_cascade(
+                graph=graph,
+                seed_set=seed_set + [candidate_node],
+                activation_costs=activation_costs,
+                alpha=alpha,
+                monte_carlo_sim=monte_carlo_sim,
+            )
 
             # Update the winning node and spread so far
-            if spread > best_spread:
-                best_spread, node = spread, candidate_node
+            if estimated_spread > best_spread:
+                best_spread = estimated_spread
+                best_node = candidate_node
 
         # Add the selected node to the seed set
-        seed_set.append(node)
+        if best_node is not None:
+            seed_set.append(best_node)
+            spreads.append(best_spread)
+            timelapse.append(time() - start_time)
+        else:
+            break
 
-        # Add estimated spread and elapsed time
-        spread.append(best_spread)
-        timelapse.append(time() - start_time)
-
-    return seed_set, spread, timelapse
+    return seed_set, spreads, timelapse
