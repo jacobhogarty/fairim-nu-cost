@@ -16,7 +16,7 @@ from src import independent_cascade
         ),
     ]
 )
-def test_independent_cascade(edges, activation_costs, seed_set, alpha, expected_range):
+def test__independent_cascade(edges, activation_costs, seed_set, alpha, expected_range):
     graph = nx.Graph()
     graph.add_edges_from(edges)
 
