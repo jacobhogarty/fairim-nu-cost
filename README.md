@@ -67,6 +67,11 @@ effectively.
 ### Built With
 
 * ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+* ![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)
+* ![Pandas](https://img.shields.io/badge/pandas-%23150458.svg?style=for-the-badge&logo=pandas&logoColor=white)
+* ![SciPy](https://img.shields.io/badge/SciPy-%230C55A5.svg?style=for-the-badge&logo=scipy&logoColor=%white)
+* ![Pytest](https://img.shields.io/badge/pytest-%23ffffff.svg?style=for-the-badge&logo=pytest&logoColor=2f9fe3)
+* ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,27 +81,75 @@ effectively.
 
 ## Getting Started
 
-...
+To get a local copy up and running, follow these simple steps.
 
 ### Prerequisites
 
-...
+Ensure you have Python 3.12 installed. You can verify this by running:
+
+```bash
+python3 - -version
+```
+
+It's recommended to use a virtual environment to manage dependencies:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
 ### Installation
 
-...
+1. Clone the Repository:
+
+```bash
+git clone https://github.com/Cabin320/fair_influence_maximisation.git
+cd fair_influence_maximisation
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run tests (optional but recommended):
+```bash
+pytest tests/
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
 
-...
+This project includes a suite of tools and scripts for experimenting with fair influence maximisation algorithms.
+
+### Example Usage
+
+To run the main influence maximisation heuristic:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## References
 
-...
+This project is inspired by and builds upon the following key works:
+
+- D. Kempe, J. Kleinberg, and E. Tardos, “Maximizing the Spread of
+Influence through a Social Network,” Cornell University, New York,
+Tech. Rep., 8 2003. [Online]. Available: https://dl.acm.org/doi/abs/10.
+1145/956750.956769
+- A. Tsang, B. Wilder, E. Rice, M. Tambe, and Y. Zick, “Group-Fairness
+in Influence Maximization,” National University of Singapore, Tech.
+Rep., 3 2019. [Online]. Available: http://arxiv.org/abs/1903.00967
+- K. Ma, X. Xu, H. Yang, R. Cao, and L. Zhang, “Fair Influence
+Maximization in Social Networks: A Community-Based Evolutionary
+Algorithm,” Anhui University, Hefei, Tech. Rep., 11 2023. [Online].
+Available: http://arxiv.org/abs/2311.14288
+- A. Rahmattalabi, S. Jabbari, H. Lakkaraju, P. Vayanos, M. Izenberg,
+R. Brown, E. Rice, and M. Tambe, “Fair Influence Maximization: A
+Welfare Optimization Approach,” University of Southern California,
+Tech. Rep., 6 2020. [Online]. Available: http://arxiv.org/abs/2006.07906
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
