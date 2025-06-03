@@ -47,11 +47,13 @@
 
 Influence spread involves modelling the propagation of ideas and other contagions through a network of agents. A central
 challenge in this area is the problem of "maximising influence spread", which seeks to identify a seed set of nodes to
-initiate the process and achieve the widest possible spread. As this problem is NP-hard, heuristics are often employed
-to approximate solutions. This project focuses on developing a heuristic for influence maximisation when nodes have
-non-uniform costs, incorporating the concept of fair influence maximisation (FIM). FIM aims to ensure an equitable
-distribution of influence across communities within the network, reducing influence gaps while maximising overall
-spread. The research will explore strategies to balance the dual objectives of maximising influence spread and promoting
+initiate the process and achieve the widest possible spread. 
+
+As this problem is NP-hard, heuristics are often employed to approximate solutions. This project focuses on developing a heuristic for influence maximisation when nodes have
+non-uniform costs, incorporating the concept of fair influence maximisation (FIM). FIM aims to ensure an equitable distribution of influence across communities within the network, reducing influence gaps while maximising overall
+spread. 
+
+The research will explore strategies to balance the dual objectives of maximising influence spread and promoting
 fairness in the presence of cost variability, developing and evaluating new heuristics to address these challenges
 effectively.
 
