@@ -12,10 +12,14 @@
   <p align="center">
     A Python-based project developing  a heuristic algorithm for cost-sensitive, fair influence maximisation in social networks.
     <br />
+    <a href="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml">
+        <img src="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg" alt="Build"/></a>
+    <a href="https://img.shields.io/badge/linting-flake8-blue">
+        <img src="https://img.shields.io/badge/linting-flake8-blue" alt="Linter"/></a>
+    <a href="https://img.shields.io/badge/python-3.12-blue&logoColor=white">
+        <img src="https://img.shields.io/badge/python-3.12-blue&logoColor=white" alt="Python Version"/></a>
   </p>
 </div>
-
-[![test-and-validate](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg)](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml)
 
 <!-- TABLE OF CONTENTS -->
 <details>
