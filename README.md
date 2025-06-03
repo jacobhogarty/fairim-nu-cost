@@ -4,13 +4,13 @@
 <br />
 <div align="center">
   <a href="https://github.com/Cabin320/fair_influence_maximisation">
-    <img src="images/uow_logo.png.png" alt="Logo" width="80" height="80">
+    <img src="images/uow_logo.png" alt="Logo" width="250" height="250">
   </a>
 
 <h3 align="center">Fair Influence Maximisation with Non-Uniform Costs in Social Networks</h3>
 
   <p align="center">
-    A Python-based project developing heuristics for cost-sensitive, fair influence maximisation in networks, balancing spread and equity across communities.
+    A Python-based project developing  a heuristic algorithm for cost-sensitive, fair influence maximisation in social networks.
     <br />
   </p>
 </div>
@@ -43,11 +43,6 @@
 <!-- ABOUT THE PROJECT -->
 
 ## About The Project
-
-<p align="center">
-  <img src="https://github.com/Cabin320/fair_influence_maximisation/images/social_network.jpg" alt="Social Network Graph"/>
-</p>
-
 
 Influence spread involves modelling the propagation of ideas and other contagions through a network of agents. A central
 challenge in this area is the problem of "maximising influence spread", which seeks to identify a seed set of nodes to
