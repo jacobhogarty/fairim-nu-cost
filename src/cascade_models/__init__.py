@@ -1,1 +1,1 @@
-from independent_cascade_model import independent_cascade
+from .independent_cascade_model import independent_cascade

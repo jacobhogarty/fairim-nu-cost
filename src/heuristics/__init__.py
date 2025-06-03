@@ -1,1 +1,1 @@
-from original_greedy import greedy
+from .original_greedy import greedy
