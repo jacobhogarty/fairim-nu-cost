@@ -6,8 +6,14 @@ name: test-and-validate
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
 
 permissions:
   contents: read
@@ -39,3 +45,4 @@ jobs:
     - name: Run tests
       run: |
         PYTHONPATH=$PYTHONPATH:. pytest -v
+
