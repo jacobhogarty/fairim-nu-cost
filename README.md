@@ -15,7 +15,7 @@
   </p>
 </div>
 
-[![Python Test and Lint](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg)](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml)
+[![test-and-validate](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg)](https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml)
 
 <!-- TABLE OF CONTENTS -->
 <details>
