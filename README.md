@@ -35,6 +35,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#references">References</a></li>
   </ol>
 </details>
 
@@ -81,6 +82,12 @@ effectively.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Usage
+
+...
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## References
 
 ...
 
