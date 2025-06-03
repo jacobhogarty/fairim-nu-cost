@@ -81,7 +81,7 @@ graph TD
     
     %% Influence maximisation specific relationships
     SciPy -->|optimisation| NetworkX
-    NetworkX -->|graph algorithms| Fair_Influence_Maximisation
+    NetworkX -->|graph algorithms| Fair_Influence_Maximisation["Fair Influence Maximisation"]
     Pandas -->|data handling| Fair_Influence_Maximisation
     
     %% Testing and CI/CD
