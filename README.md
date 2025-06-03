@@ -13,7 +13,7 @@
     A Python-based project developing  a heuristic algorithm for cost-sensitive, fair influence maximisation in social networks.
     <br />
     <a href="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml">
-        <img src="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg" alt="Build"/></a>
+        <img src="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg" alt="build"/></a>
     <a href="https://img.shields.io/badge/linting-flake8-blue">
         <img src="https://img.shields.io/badge/linting-flake8-blue" alt="Linter"/></a>
     <a href="https://img.shields.io/badge/python-3.12-blue&logoColor=white">
