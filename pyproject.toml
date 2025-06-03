@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fair_influence_maximisation"
+version = "0.1.0"
+description = "Fair Influence Maximisation Heuristic Algorithms"
+authors = [
+    {name = "Jacob Hogarty", email = "jacob.hogarty@yahoo.com"},
+]
+readme = "README.md"
+requires-python = ">=3.12"
+
+[project.urls]
+Homepage = "https://github.com/Cabin320/fair_influence_maximisation"
+
+[tool.setuptools]
+packages = ["src"]
