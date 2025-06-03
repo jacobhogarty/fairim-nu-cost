@@ -166,8 +166,7 @@ This project is inspired by and builds upon the following key works:
 
 - D. Kempe, J. Kleinberg, and E. Tardos, “Maximizing the Spread of
 Influence through a Social Network,” Cornell University, New York,
-Tech. Rep., 8 2003. [Online]. Available: https://dl.acm.org/doi/abs/10.
-1145/956750.956769
+Tech. Rep., 8 2003. [Online]. Available: https://dl.acm.org/doi/abs/10.1145/956750.956769
 - A. Tsang, B. Wilder, E. Rice, M. Tambe, and Y. Zick, “Group-Fairness
 in Influence Maximization,” National University of Singapore, Tech.
 Rep., 3 2019. [Online]. Available: http://arxiv.org/abs/1903.00967
