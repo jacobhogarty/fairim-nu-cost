@@ -1,6 +1,6 @@
 import pytest
 import networkx as nx
-from ..src import independent_cascade
+from src import independent_cascade
 
 
 @pytest.mark.parametrize(
