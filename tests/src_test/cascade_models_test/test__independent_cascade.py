@@ -17,6 +17,19 @@ from src import independent_cascade
     ]
 )
 def test__independent_cascade(edges, activation_costs, seed_set, alpha, expected_range):
+    """
+    Tests the independent cascade to ensure correct spread
+
+    Args:
+        edges: Number of edges
+        activation_costs: Set of activation costs
+        seed_set: Set of seed nodes
+        alpha: Bias probability
+        expected_range: Expected range of spread
+
+    Asserts:
+        If the expected range of spread is correct
+    """
     graph = nx.Graph()
     graph.add_edges_from(edges)
 

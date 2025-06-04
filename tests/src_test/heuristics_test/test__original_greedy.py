@@ -13,6 +13,20 @@ from src import greedy
 def test__greedy_fundamental(small_graph, random_activation_costs, k, alpha, expected_min_size):
     """
     Test that greedy returns correct number of seeds and spreads
+
+    Args:
+        small_graph: Small graph input
+        random_activation_costs: Randomised activation costs
+        k: Number of seeds
+        alpha: Bias probability of cost
+        expected_min_size: Expected minimum number of seeds
+
+    Asserts:
+        The expected number of seeds
+        All seeds are actually nodes in the graph
+        Spreads list matches seed set size
+        Timings are recorded
+        Spreads are monotonically increasing
     """
     seed_set, spreads, timelapse = greedy(
         graph=small_graph,
@@ -43,6 +57,13 @@ def test__greedy_fundamental(small_graph, random_activation_costs, k, alpha, exp
 def test__greedy_empty_seed_with_zero_k(small_graph, random_activation_costs):
     """
     Test that greedy handles k=0 correctly
+
+    Args:
+        small_graph: Small graph input
+        random_activation_costs: Randomised activation costs
+
+    Asserts:
+        Seed set, spreads, and timelapse are empty (0)
     """
     seed_set, spreads, timelapse = greedy(
         graph=small_graph,
