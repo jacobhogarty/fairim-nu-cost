@@ -168,6 +168,8 @@ We incorporate datasets from the [SNAP (Stanford Network Analysis Project)](http
 Jure Leskovec and Andrej Krevl. These datasets cover various domains and offer realistic network structures commonly
 found in social, citation, communication, and web networks.
 
+These graphs can be seen in `data/snap/` folder, please follow the examples in `visualisation.ipynb`.
+
 ### Synthetic Datasets
 
 Alongside real-world data, we generate synthetic networks using established graph models to simulate different
