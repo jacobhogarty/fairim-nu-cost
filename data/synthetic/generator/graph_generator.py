@@ -30,9 +30,10 @@ class GraphGenerator(ABC):
         Args:
             node_size: Number of nodes
             with_labels: Labels of the graph
+            edge_labels: Labels of the edges
         """
         if self.graph is None:
-            raise ValueError("No graph generated yet. Call generate_graph() first.")
+            raise ValueError('No graph generated yet. Call generate_graph() first')
 
         plt.figure(figsize=(12, 8))
         pos = spring_layout(
@@ -47,8 +48,8 @@ class GraphGenerator(ABC):
             node_size=node_size,
             with_labels=with_labels,
             font_size=8,
-            node_color="lightblue",
-            edge_color="gray",
+            node_color='lightblue',
+            edge_color='gray',
             alpha=0.7,
         )
 
@@ -59,7 +60,7 @@ class GraphGenerator(ABC):
                 pos,
                 edge_labels=edge_labels,
                 font_size=7,
-                font_color="red",
+                font_color='red',
                 bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
             )
 
