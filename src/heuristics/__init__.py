@@ -1,1 +1,1 @@
-from .original_greedy import greedy
+from .kempe_greedy import kempe_greedy

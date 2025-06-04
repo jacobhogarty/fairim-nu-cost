@@ -1,3 +1,3 @@
-from .cascade_models import *
+from .diffusion_models import *
 from .heuristics import *
 from .utils import *
