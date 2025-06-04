@@ -51,7 +51,7 @@
 ## About The Project
 
 Influence spread involves modelling the propagation of ideas and other contagions through a network of agents. A central
-challenge in this area is the problem of "maximising influence spread", which seeks to identify a seed set of nodes to
+challenge in this area is the problem of ["maximising influence spread"](https://snap-stanford.github.io/cs224w-notes/network-methods/influence-maximization), which seeks to identify a seed set of nodes to
 initiate the process and achieve the widest possible spread.
 
 As this problem is NP-hard, heuristics are often employed to approximate solutions. This project focuses on developing a
