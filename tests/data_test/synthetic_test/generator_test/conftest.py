@@ -14,4 +14,4 @@ def generate_complete_graph():
             """
             self.graph = nx.complete_graph(n)
 
-    return CompleteGraphGenerator
+    return CompleteGraphGenerator()
