@@ -4,7 +4,9 @@ from abc import (
 )
 from networkx import (
     spring_layout,
-    draw,
+    draw_networkx,
+    draw_networkx_edge_labels,
+    get_edge_attributes,
 )
 
 import matplotlib.pyplot as plt
@@ -21,7 +23,7 @@ class GraphGenerator(ABC):
         """
         pass
 
-    def visualise(self, node_size=500, with_labels=True):
+    def visualise(self, node_size=500, with_labels=True, edge_labels=True):
         """
         Visualises the graph
 
@@ -32,19 +34,34 @@ class GraphGenerator(ABC):
         if self.graph is None:
             raise ValueError("No graph generated yet. Call generate_graph() first.")
 
-        plt.figure(figsize=(8, 6))
-        pos = spring_layout(self.graph)  # Default layout
+        plt.figure(figsize=(12, 8))
+        pos = spring_layout(
+            self.graph,
+            k=0.15,
+            iterations=50,
+        )
 
-        draw(
+        draw_networkx(
             self.graph,
             pos,
-            with_labels=with_labels,
             node_size=node_size,
-            node_color='skyblue',
-            edge_color='gray',
-            font_size=10,
-            font_weight='bold',
+            with_labels=with_labels,
+            font_size=8,
+            node_color="lightblue",
+            edge_color="gray",
+            alpha=0.7,
         )
+
+        if edge_labels and get_edge_attributes(self.graph, 'weight'):
+            edge_labels = get_edge_attributes(self.graph, 'weight')
+            draw_networkx_edge_labels(
+                self.graph,
+                pos,
+                edge_labels=edge_labels,
+                font_size=7,
+                font_color="red",
+                bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
+            )
 
         plt.show()
 

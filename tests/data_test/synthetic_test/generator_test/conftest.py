@@ -2,11 +2,13 @@ import pytest
 import networkx as nx
 from data import GraphGenerator
 
+
 @pytest.fixture
 def generate_complete_graph():
     """
     Generates a complete graph
     """
+
     class CompleteGraphGenerator(GraphGenerator):
         def generate_graph(self, n):
             """
