@@ -71,30 +71,33 @@ effectively.
 ```mermaid
 graph TD
     Python --> NumPy["NumPy (Numerical computing)"]
-    Python --> Pandas["Pandas (Data manipulation)"]
+    Python --> Pickle["Pickle (Data serialisation)"]
     Python --> SciPy["SciPy (Scientific computing)"]
     Python --> Pytest["Pytest (Testing framework)"]
     Python --> NetworkX["NetworkX (Graph analysis)"]
-    Python --> GitHub_Actions["GitHub Actions (CI/CD)"]
+    Python --> Asyncio["asyncio (Asynchronous programming)"]
 %% Core scientific computing dependencies
     NumPy --> SciPy
-    NumPy --> Pandas
 %% Influence maximisation specific relationships
     SciPy -->|optimisation| NetworkX
     NetworkX -->|graph algorithms| Fair_Influence_Maximisation["Fair Influence Maximisation"]
-    Pandas -->|data handling| Fair_Influence_Maximisation
+    Pickle -->|data handling| Fair_Influence_Maximisation
+    Asyncio -->|concurrent execution| Pickle
 %% Testing and CI/CD
     Pytest -->|testing| Fair_Influence_Maximisation
-    Pytest --> GitHub_Actions
+    Pytest --> GitHub_Actions["Github Actions"]
     GitHub_Actions -->|automated testing| Fair_Influence_Maximisation
+
     style Python fill: #2b5b84, color: white, stroke: #1a3653
     style NumPy fill: #4e79a7, color: white, stroke: #2c4a6b
-    style Pandas fill: #e15759, color: white, stroke: #a83a3c
+    style Pickle fill: #e15759, color: white, stroke: #a83a3c
     style SciPy fill: #76b7b2, color: #333, stroke: #4f8b87
     style Pytest fill: #59a14f, color: white, stroke: #3a7532
-    style NetworkX fill: #edc948, color: #333, stroke: #c9a932
+    style NetworkX fill: #f28e2c, color: #333, stroke: #c96f17
     style GitHub_Actions fill: #b07aa1, color: white, stroke: #7d5270
-    style Fair_Influence_Maximisation fill: #ff9da7, color: #333, stroke: #d97b87
+    style Asyncio fill: #9c755f, color: white, stroke: #6e5144
+    style Fair_Influence_Maximisation fill: #6a4c93, color: white, stroke: #4a2c6f
+
     classDef default stroke-width: 2px, font-family: Helvetica
     linkStyle default stroke: #666, stroke-width: 1.5px
 ```
@@ -155,7 +158,7 @@ This project includes a suite of tools and scripts for experimenting with fair i
 
 To run the main influence maximisation heuristic, please see the `run.ipynb` file.
 
-Additionally, to see additional heuristics and example usage, please follow guidance in `example.ipynb`.
+To see additional heuristics and example usage, please follow guidance in `example.ipynb`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
