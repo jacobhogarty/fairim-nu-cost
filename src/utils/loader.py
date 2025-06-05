@@ -32,12 +32,12 @@ class Loader:
             data,
         )
 
-    async def load_multiple(self, file_paths: glob, filetype: str):
+    async def load_multiple(self, file_paths: str, filetype: str):
         """
         Load multiple pickle files concurrently
 
         Args:
-            file_paths: Multiple path object representing the path of the file
+            file_paths: Path to folder containing multiple pickle files
             filetype: File extension
 
         Returns:
