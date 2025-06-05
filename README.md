@@ -165,7 +165,7 @@ To see additional heuristics and example usage, please follow guidance in `examp
 ## Datasets
 
 This project uses a combination of real-world and synthetic network datasets to support a broad range of graph-based
-experiments and analyses.
+experiments.
 
 ### Real-World Datasets
 
