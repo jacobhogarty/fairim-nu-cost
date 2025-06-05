@@ -153,7 +153,7 @@ This project includes a suite of tools and scripts for experimenting with fair i
 
 ### Example Usage
 
-To run the main influence maximisation heuristic, please the `run.ipynb` file.
+To run the main influence maximisation heuristic, please see the `run.ipynb` file.
 
 Additionally, to see additional heuristics and example usage, please follow guidance in `example.ipynb`.
 
