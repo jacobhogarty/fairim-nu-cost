@@ -2,7 +2,11 @@ from abc import (
     ABC,
     abstractmethod,
 )
+import pickle
+from pathlib import Path
+
 from networkx import (
+    Graph,
     spring_layout,
     draw_networkx,
     draw_networkx_edge_labels,
@@ -23,7 +27,43 @@ class GraphGenerator(ABC):
         """
         pass
 
-    def visualise(self, node_size=500, with_labels=True, edge_labels=True):
+    def serialise(self, path: Path, filename: str) -> pickle:
+        """
+        Serialises the graph using pickle
+
+        Args:
+            path: Path object representing the path of the file
+            filename: Name of the file
+
+        Returns:
+            Pickled graph
+        """
+        path.mkdir(parents=True, exist_ok=True)
+        file_path = path / f'{filename}.pkl'
+
+        with open(file_path, 'wb') as file:
+            pickle.dump(
+                obj=self.graph,
+                file=file,
+            )
+
+        print(f'Graph serialised to {file_path}')
+
+    def get_graph(self) -> Graph:
+        """
+        Returns the generated graph
+
+        Returns:
+            The generated graph
+        """
+        return self.graph
+
+    def visualise(
+            self,
+            node_size: int = 500,
+            with_labels: bool = True,
+            edge_labels: bool = True,
+    ):
         """
         Visualises the graph
 
@@ -43,8 +83,8 @@ class GraphGenerator(ABC):
         )
 
         draw_networkx(
-            self.graph,
-            pos,
+            G=self.graph,
+            pos=pos,
             node_size=node_size,
             with_labels=with_labels,
             font_size=8,
@@ -56,8 +96,8 @@ class GraphGenerator(ABC):
         if edge_labels and get_edge_attributes(self.graph, 'weight'):
             edge_labels = get_edge_attributes(self.graph, 'weight')
             draw_networkx_edge_labels(
-                self.graph,
-                pos,
+                G=self.graph,
+                pos=pos,
                 edge_labels=edge_labels,
                 font_size=7,
                 font_color='red',
@@ -65,12 +105,3 @@ class GraphGenerator(ABC):
             )
 
         plt.show()
-
-    def get_graph(self):
-        """
-        Returns the generated graph
-
-        Returns:
-            The generated graph
-        """
-        return self.graph
