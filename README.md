@@ -132,8 +132,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 1. Clone the Repository:
 
 ```bash
-git clone https://github.com/Cabin320/fair_influence_maximisation.git
-cd fair_influence_maximisation
+git clone https://github.com/Cabin320/fairim-nu-cost.git
+cd fairim-nu-cost
 ```
 
 2. Install dependencies:
