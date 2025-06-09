@@ -11,7 +11,7 @@ def independent_cascade(
         graph: Graph,
         seed_set: list,
         probability: float = 0.5,
-        monte_carlo_sim: int = 1000,
+        num_iter: int = 1000,
 ) -> floating:
     """
     Independent cascade model
@@ -20,14 +20,14 @@ def independent_cascade(
         graph: NetworkX graph with nodes and edges
         seed_set: Set of seed nodes
         probability: Probability of node getting activated
-        monte_carlo_sim: Number of Monte Carlo simulations
+        num_iter: Number of Iterations of the Simulations
 
     Returns:
         Average spread across all simulations
     """
     spread = []
 
-    for simulation in range(monte_carlo_sim):
+    for simulation in range(num_iter):
         new_active = list(seed_set)
         activated_node = list(seed_set)
 

@@ -1,6 +1,4 @@
-from time import (
-    time,
-)
+from time import time
 from networkx import Graph
 from src import independent_cascade
 
@@ -9,7 +7,7 @@ def kempe_greedy(
         graph: Graph,
         k: int,
         probability: float = 0.5,
-        monte_carlo_sim: int = 1000,
+        num_iter: int = 1000,
 ):
     """
     Greedy heuristic by Kempe et al. (2003). Iteratively picks nodes with the largest marginal influence spread.
@@ -18,7 +16,7 @@ def kempe_greedy(
         graph: NetworkX graph with nodes and edges
         k: Number of seed nodes to select
         probability: Probability of activation
-        monte_carlo_sim: Number of Monte Carlo simulations
+        num_iter: Number of Iterations of the Simulations
 
     Returns:
         seed_set: List of selected seed nodes
@@ -43,7 +41,7 @@ def kempe_greedy(
                 graph=graph,
                 seed_set=trial_seed_set,
                 probability=probability,
-                monte_carlo_sim=monte_carlo_sim,
+                num_iter=num_iter,
             )
 
             if spread > best_spread:

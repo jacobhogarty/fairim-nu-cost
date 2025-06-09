@@ -1,1 +1,1 @@
-from .kempe_greedy import kempe_greedy
+from base_heuristics import *

@@ -28,7 +28,7 @@ def test__independent_cascade(edges, seed_set, probability, expected_range):
         graph=graph,
         seed_set=seed_set,
         probability=probability,
-        monte_carlo_sim=10,
+        num_iter=10,
     )
 
     assert isinstance(spread, float)
