@@ -1,1 +1,1 @@
-from base_heuristics import *
+from .base_heuristics import *
