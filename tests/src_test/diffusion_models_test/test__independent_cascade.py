@@ -1,6 +1,6 @@
 import pytest
 import networkx as nx
-from src import independent_cascade
+from src import expected_spread
 
 
 @pytest.mark.parametrize(
@@ -14,21 +14,22 @@ from src import independent_cascade
         ),
     ]
 )
-def test__independent_cascade(edges, seed_set, probability, expected_range):
+def test_expected_spread(edges, seed_set, probability, expected_range):
     """
-    Tests the independent cascade model for expected average spread.
+    Tests the expected influence spread over multiple simulations.
 
     Asserts:
-        Spread is a float and within the expected range
+        - Spread is a float
+        - Within the expected range
     """
     graph = nx.DiGraph()
     graph.add_edges_from(edges)
 
-    spread = independent_cascade(
+    spread = expected_spread(
         graph=graph,
         seed_set=seed_set,
         probability=probability,
-        num_iter=10,
+        num_simulations=50,
     )
 
     assert isinstance(spread, float)

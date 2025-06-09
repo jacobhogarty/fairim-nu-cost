@@ -20,6 +20,19 @@ def small_graph():
     )
     return graph
 
+@pytest.fixture
+def small_groups():
+    """
+    Creates a dictionary mapping nodes to group labels
+    """
+    return {
+        1: 'A',
+        2: 'A',
+        3: 'A',
+        4: 'B',
+        5: 'B',
+    }
+
 
 @pytest.fixture
 def random_activation_costs(small_graph):

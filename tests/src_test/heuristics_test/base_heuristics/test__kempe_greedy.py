@@ -31,7 +31,7 @@ def test__kempe_greedy_basic(small_graph, k, probability, expected_min_size):
         graph=small_graph,
         k=k,
         probability=probability,
-        num_iter=10,  # Reduced for faster testing
+        num_simulations=10,  # Reduced for faster testing
     )
 
     # Verify the expected number of seeds
@@ -68,7 +68,7 @@ def test__kempe_greedy_empty_seed_with_zero_k(small_graph):
         graph=small_graph,
         k=0,
         probability=0.5,
-        num_iter=10,
+        num_simulations=10,
     )
     assert len(seed_set) == 0
     assert len(spreads) == 0
@@ -92,6 +92,6 @@ def test__kempe_greedy_large_k_returns_max_possible(small_graph):
         graph=small_graph,
         k=large_k,
         probability=0.5,
-        num_iter=10,
+        num_simulations=10,
     )
     assert len(seed_set) <= num_nodes
