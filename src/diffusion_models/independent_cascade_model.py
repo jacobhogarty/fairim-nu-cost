@@ -1,7 +1,5 @@
 from numpy import (
     random,
-    extract,
-    mean,
     floating,
 )
 from networkx import Graph
@@ -25,31 +23,23 @@ def independent_cascade(
     Returns:
         Average spread across all simulations
     """
-    spread = []
+    total_activated = 0
 
-    for simulation in range(num_iter):
-        new_active = list(seed_set)
-        activated_node = list(seed_set)
+    for _ in range(num_iter):
+        active = set(seed_set)
+        newly_active = set(seed_set)
 
-        while new_active:
-            targets = []
-            for node in new_active:
-                neighbors = graph.neighbors(node)
-                targets.extend(neighbors)
+        while newly_active:
+            next_active = set()
+            for node in newly_active:
+                for neighbor in graph.neighbors(node):
+                    if neighbor not in active:
+                        if random.random() < probability:
+                            next_active.add(neighbor)
 
-            # Determine newly activated neighbors
-            targets = sorted(set(targets) - set(activated_node))  # remove already active
-            random.seed(simulation)
+            newly_active = next_active
+            active.update(newly_active)
 
-            success = random.uniform(
-                low = 0,
-                high = 1,
-                size = len(targets),
-            ) < probability
+        total_activated += len(active)
 
-            new_active = list(extract(success, targets))
-            activated_node.extend(new_active)
-
-        spread.append(len(activated_node))
-
-    return mean(spread)
+    return total_activated / num_iter
