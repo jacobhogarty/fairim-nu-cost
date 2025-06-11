@@ -1,35 +1,51 @@
-from numpy import random
+"""
+Implementation of Independent Cascade Model from Kempe et al. 2003
+"""
+import random
+
 from networkx import Graph
 
 
 def independent_cascade(
         graph: Graph,
-        seed_set: list,
-        probability: float = 0.5,
+        seeds: set,
+        probability: float = 0.1,
+        max_steps: int = 0
 ) -> set:
     """
-    Independent cascade model, which is a stochastic model used to simulate the spread of influence or information
-    in social networks developed by Kempe et al. in 2003.
+    Simulate the Independent Cascade model starting from seed nodes.
 
     Args:
-        graph: NetworkX graph with nodes and edges
-        seed_set: Set of seed nodes
-        probability: Probability of node getting activated
+        graph: NetworkX graph
+        seeds: Set of initial active nodes
+        probability: Default activation probability if edge doesn't specify
+        max_steps: Maximum propagation steps (0 for unlimited)
 
     Returns:
-        The set of activated nodes
+        Set of activated nodes
     """
-    active, newly_active = set(seed_set), set(seed_set)
+    if not seeds or len(graph) == 0:
+        return set()
 
-    while newly_active:
-        next_active = set()
-        for node in newly_active:
+    activated = set(seeds)
+    newly_activated = set(seeds)
+    steps = 0
+
+    while newly_activated:
+        next_activated = set()
+        for node in newly_activated:
             for neighbor in graph.neighbors(node):
-                if neighbor not in active:
-                    if random.random() < probability:
-                        next_active.add(neighbor)
+                if neighbor not in activated:
+                    prob = graph[node][neighbor].get('weight', probability)
 
-        newly_active = next_active
-        active.update(newly_active)
+                    if random.random() <= prob:
+                        next_activated.add(neighbor)
 
-    return active
+        newly_activated = next_activated - activated
+        activated.update(newly_activated)
+        steps += 1
+
+        if 0 < max_steps <= steps:
+            break
+
+    return activated

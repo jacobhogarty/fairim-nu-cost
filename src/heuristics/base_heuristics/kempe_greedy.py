@@ -1,6 +1,12 @@
+"""
+Implementation of the Greedy heuristic by Kempe et al. 2003
+"""
 from time import time
 from networkx import Graph
-from src import expected_spread
+
+from tqdm import tqdm
+
+from src import estimate_influence
 
 
 def kempe_greedy(
@@ -8,7 +14,7 @@ def kempe_greedy(
         k: int,
         probability: float = 0.5,
         num_simulations: int = 1000,
-):
+)-> tuple[list, list, list]:
     """
     Greedy heuristic by Kempe et al. (2003). Iteratively picks nodes with the largest marginal influence spread.
 
@@ -28,7 +34,7 @@ def kempe_greedy(
     timelapse = []
     start_time = time()
 
-    for _ in range(k):
+    for _ in tqdm(range(k), desc='Selecting seeds'):
         best_node = None
         best_spread = -1
 
@@ -37,11 +43,11 @@ def kempe_greedy(
                 continue
 
             trial_seed_set = seed_set + [node]
-            spread = expected_spread(
+            spread = estimate_influence(
                 graph=graph,
-                seed_set=trial_seed_set,
-                probability=probability,
+                seeds=trial_seed_set,
                 num_simulations=num_simulations,
+                propagation_prob=probability,
             )
 
             if spread > best_spread:

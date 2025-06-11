@@ -1,3 +1,4 @@
 from .helper import (
-    expected_spread,
+    estimate_influence,
+    estimate_influence_per_group
 )

@@ -1,6 +1,6 @@
 from .kempe_greedy import kempe_greedy
-from .maximin_fairness import (
-    estimate_spread,
+from .maximin_greedy import (
     maximin_utility,
-    greedy_maximin,
+    maximin_greedy,
 )
+from .fair_greedy import fair_greedy
