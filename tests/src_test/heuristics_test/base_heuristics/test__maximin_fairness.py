@@ -1,6 +1,6 @@
 import pytest
 
-from src import greedy_maximin
+from src import maximin_greedy
 
 
 @pytest.mark.parametrize(
@@ -11,9 +11,9 @@ from src import greedy_maximin
         (3, 0.3, 3),
     ]
 )
-def test_greedy_maximin_basic(small_graph, small_groups, k, p, expected_seed_size):
+def test_maximin_greedy_basic(small_graph, small_groups, k, p, expected_seed_size):
     """
-    Test that greedy_maximin returns the correct number of seeds and valid outputs.
+    Test that maximin_greedy returns the correct number of seeds and valid outputs.
 
     Args:
         small_graph: Small directed graph fixture
@@ -27,12 +27,12 @@ def test_greedy_maximin_basic(small_graph, small_groups, k, p, expected_seed_siz
         - All seeds are valid nodes in the graph
         - Seeds are unique
     """
-    seeds = greedy_maximin(
+    seeds, _, _ = maximin_greedy(
         graph=small_graph,
         groups=small_groups,
         k=k,
-        p=p,
-        num_simulations=10,  # Use fewer simulations for speed
+        probability=p,
+        num_simulations=10,
     )
 
     # Check the correct number of seeds selected
