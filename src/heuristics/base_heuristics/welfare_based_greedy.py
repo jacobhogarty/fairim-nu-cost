@@ -75,22 +75,33 @@ def welfare_greedy(graph, communities, k, alpha, p=0.1, sims=200):
 
     return seeds
 
+if __name__ == '__main__':
+    graph = nx.erdos_renyi_graph(
+        n=20,
+        p=0.1,
+        seed=42,
+    )
 
-graph = nx.erdos_renyi_graph(20, 0.1, seed=42)
+    # Assign communities (e.g., group 0 and 1)
+    for i, node in enumerate(graph.nodes()):
+        graph.nodes[node]['community'] = 0 if i < 10 else 1
 
-# Assign communities (e.g., group 0 and 1)
-for i, node in enumerate(graph.nodes()):
-    graph.nodes[node]['community'] = 0 if i < 10 else 1
+    communities = set(nx.get_node_attributes(graph, 'community').values())
 
-communities = set(nx.get_node_attributes(graph, 'community').values())
+    k = 3  # number of seeds to select
+    alpha = 1.5  # inequality-aversion parameter (higher = more fairness)
+    p = 0.1  # edge activation probability (IC model)
 
-k = 3  # number of seeds to select
-alpha = 1.5  # inequality-aversion parameter (higher = more fairness)
-p = 0.1  # edge activation probability (IC model)
+    seeds = welfare_greedy(
+        graph,
+        communities,
+        k=k,
+        alpha=alpha,
+        p=p,
+        sims=200,
+    )
 
-seeds = welfare_greedy(graph, communities, k=k, alpha=alpha, p=p, sims=200)
+    print(f'Selected seed nodes: {seeds}')
 
-print("Selected seed nodes:", seeds)
-
-final_frac = simulate_influence(graph, seeds, p=0.1, num_sims=500)
-print(f'Expected influenced fraction per community: {final_frac}')
+    final_frac = simulate_influence(graph, seeds, p=0.1, num_sims=500)
+    print(f'Expected influenced fraction per community: {final_frac}')
