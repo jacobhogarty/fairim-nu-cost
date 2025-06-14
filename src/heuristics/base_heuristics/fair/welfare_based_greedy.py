@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
     print(f'Selected seed nodes: {seeds}')
 
-    final_frac = independent_cascade_for_communities(
+    final_frac = independent_cascade_community(
         graph=graph,
         seeds=seeds,
         probability=0.1,
