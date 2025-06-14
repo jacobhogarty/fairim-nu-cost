@@ -80,7 +80,7 @@ graph TD
     NumPy --> SciPy
 %% Influence maximisation specific relationships
     SciPy -->|optimisation| NetworkX
-    NetworkX -->|graph algorithms| Fair_Influence_Maximisation["Fair Influence Maximisation"]
+    NetworkX -->|graph algorithms| Fair_Influence_Maximisation["Non-Uniform Fair Influence Maximisation"]
     Pickle -->|data handling| Fair_Influence_Maximisation
     Asyncio -->|concurrent execution| Pickle
 %% Testing and CI/CD
