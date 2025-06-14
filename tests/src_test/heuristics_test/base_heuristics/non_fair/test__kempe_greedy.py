@@ -23,11 +23,8 @@ def test__kempe_greedy_basic(small_graph, k, probability, expected_min_size):
     Asserts:
         - Correct number of seeds
         - All seeds are valid nodes in the graph
-        - Spreads list matches seed set size
-        - Timings are recorded
-        - Spreads are monotonically increasing (or equal)
     """
-    seed_set, spreads, timelapse = kempe_greedy(
+    seed_set = kempe_greedy(
         graph=small_graph,
         k=k,
         probability=probability,
@@ -40,16 +37,6 @@ def test__kempe_greedy_basic(small_graph, k, probability, expected_min_size):
     # Verify all seeds are actually nodes in the graph
     for node in seed_set:
         assert node in small_graph.nodes()
-
-    # Verify spreads list matches seed set size
-    assert len(spreads) == expected_min_size
-
-    # Verify timings are recorded
-    assert len(timelapse) == expected_min_size
-
-    # Verify spreads are monotonically non-decreasing
-    for i in range(1, len(spreads)):
-        assert spreads[i] >= spreads[i - 1]
 
 
 def test__kempe_greedy_empty_seed_with_zero_k(small_graph):
@@ -64,15 +51,13 @@ def test__kempe_greedy_empty_seed_with_zero_k(small_graph):
         - Spreads list is empty
         - Timelapse is empty
     """
-    seed_set, spreads, timelapse = kempe_greedy(
+    seed_set= kempe_greedy(
         graph=small_graph,
         k=0,
         probability=0.5,
         num_simulations=10,
     )
     assert len(seed_set) == 0
-    assert len(spreads) == 0
-    assert len(timelapse) == 0
 
 
 def test__kempe_greedy_large_k_returns_max_possible(small_graph):
@@ -88,7 +73,7 @@ def test__kempe_greedy_large_k_returns_max_possible(small_graph):
     num_nodes = len(small_graph.nodes())
     large_k = num_nodes + 5  # Try to select more seeds than available nodes
 
-    seed_set, spreads, timelapse = kempe_greedy(
+    seed_set = kempe_greedy(
         graph=small_graph,
         k=large_k,
         probability=0.5,
