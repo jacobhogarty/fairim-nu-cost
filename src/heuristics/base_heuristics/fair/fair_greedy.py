@@ -103,9 +103,10 @@ def fair_greedy(
     return seed_set, gains, timelapse
 
 
+# ----------------------------
+# Example Usage
+# ----------------------------
 if __name__ == '__main__':
-    # Example Usage:
-
     # Create a simple directed graph with group labels
     graph = nx.DiGraph()
     graph.add_edges_from(
@@ -125,8 +126,6 @@ if __name__ == '__main__':
             (9, 10),
         ]
     )
-    for u, v in graph.edges():
-        graph[u][v]['p'] = 0.1  # set edge probability
 
     # Assign nodes to colour groups
     groups = {
@@ -147,4 +146,4 @@ if __name__ == '__main__':
         upper_bounds=upper_bounds,
         num_simulations=1000,
     )
-    print(selected_seeds)
+    print(f'Selected seed nodes: {selected_seeds}')

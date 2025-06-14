@@ -7,8 +7,8 @@ non-trivial problem.
 """
 from time import time
 
+import random
 import networkx as nx
-from networkx import Graph
 
 from src import estimate_influence_per_group
 from tqdm import tqdm
@@ -40,7 +40,7 @@ def maximin_utility(
 
 
 def maximin_greedy(
-        graph: Graph,
+        graph: nx.Graph,
         groups: dict,
         k: int,
         probability: float = 0.01,
@@ -110,31 +110,34 @@ def maximin_greedy(
     return seed_set, spreads, timelapse
 
 
+# ----------------------------
+# Example Usage
+# ----------------------------
 if __name__ == '__main__':
-    # Example usage:
+    graph = nx.erdos_renyi_graph(
+        n=30,
+        p=0.05,
+        seed=42,
+        directed=True,
+    )
 
-    # Create a small directed graph
-    graph = nx.DiGraph()
-    edges = [
-        (1, 2),
-        (1, 3),
-        (2, 4),
-        (3, 4),
-        (4, 5),
-        (5, 6),
-        (6, 7),
-    ]
-    graph.add_edges_from(edges)
+    while not nx.is_weakly_connected(graph):
+        graph = nx.erdos_renyi_graph(
+            n=30,
+            p=0.05,
+            seed=random.randint(0, 1000),
+            directed=True,
+        )
 
-    # Define groups: here nodes 1-4 in group 'A', nodes 5-7 in group 'B'
-    groups = {1: 'A', 2: 'A', 3: 'A', 4: 'A', 5: 'B', 6: 'B', 7: 'B'}
+    # Assign communities randomly
+    communities = {node: random.randint(0, 2) for node in graph.nodes()}  # 3 communities
 
     # Run greedy maximin for k=2 seeds
     seeds = maximin_greedy(
         graph=graph,
-        groups=groups,
-        k=2,
-        probability=0.5,
+        groups=communities,
+        k=5,
+        probability=0.1,
         num_simulations=200,
     )
     print(f'Final seeds: {seeds}')
