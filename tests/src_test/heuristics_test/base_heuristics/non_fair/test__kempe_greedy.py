@@ -51,7 +51,7 @@ def test__kempe_greedy_empty_seed_with_zero_k(small_graph):
         - Spreads list is empty
         - Timelapse is empty
     """
-    seed_set= kempe_greedy(
+    seed_set = kempe_greedy(
         graph=small_graph,
         k=0,
         probability=0.5,
@@ -65,7 +65,7 @@ def test__kempe_greedy_large_k_returns_max_possible(small_graph):
     Test that kempe_greedy does not return more seeds than available nodes.
 
     Args:
-        small_graph: Small graph input (fixture)
+        small_graph: Small graph input fixture
 
     Asserts:
         - Seed set size does not exceed total nodes in the graph

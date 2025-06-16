@@ -2,11 +2,10 @@
 Implementation of the Fair Greedy Algorithm proposed by Halabi et al. in their paper Fairness in Streaming Submodular
 Maximization: Algorithms and Hardness.
 """
-from time import time
+from tqdm import tqdm
 
 from collections import Counter
 
-from tqdm import tqdm
 import networkx as nx
 
 from src import estimate_influence
@@ -42,9 +41,6 @@ def fair_greedy(
 
     candidate_nodes = set(graph.nodes())
     seed_set = set()
-    gains = []
-    timelapse = []
-    start_time = time()
     count = Counter()
 
     def is_extendable(candidate) -> bool:
@@ -74,10 +70,15 @@ def fair_greedy(
         return (len(seed_set) + 1 + needed) <= k
 
     for _ in tqdm(range(k), desc='Selecting seeds'):
-        best_gain = -1
+        best_gain = -float('inf')
         best_node = None
 
-        current_spread = estimate_influence(graph, seed_set, num_simulations, probability)
+        current_spread = estimate_influence(
+            graph=graph,
+            seeds=seed_set,
+            num_simulations=num_simulations,
+            propagation_prob=probability,
+        )
 
         for candidate_node in candidate_nodes:
             if not is_extendable(candidate_node):
@@ -85,7 +86,7 @@ def fair_greedy(
 
             # Compute marginal gain
             marginal = estimate_influence(
-                graph, seed_set | {candidate_node}, num_simulations, probability
+                graph, seed_set | {candidate_node}, num_simulations, probability,
             ) - current_spread
 
             if marginal > best_gain:
@@ -96,11 +97,9 @@ def fair_greedy(
             break
 
         seed_set.add(best_node)
-        gains.append(best_gain)
-        timelapse.append(time() - start_time)
         count[groups[best_node]] += 1
 
-    return seed_set, gains, timelapse
+    return seed_set
 
 
 # ----------------------------

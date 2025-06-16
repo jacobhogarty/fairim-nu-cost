@@ -8,7 +8,7 @@ import networkx as nx
 
 def independent_cascade(
         graph: nx.Graph,
-        seeds: set,
+        seeds: set or list,
         probability: float = 0.1,
         max_steps: int = 0
 ) -> set:
@@ -75,7 +75,7 @@ def independent_cascade_community(
     community_counts = {c: 0 for c in set(communities.values())}
 
     for _ in range(num_sims):
-        # Use the core IC function for each simulation
+        # Use the core independent cascade function for each simulation
         activated = independent_cascade(
             graph=graph,
             seeds=seeds,

@@ -5,13 +5,13 @@ Note: this implementation technically doesn't work as Tsang et al. found that th
 it cannot be solved via independent cascade and requires multi-objective linear optimisation, which is an extremely
 non-trivial problem.
 """
+from tqdm import tqdm
 from time import time
 
 import random
 import networkx as nx
 
 from src import estimate_influence_per_group
-from tqdm import tqdm
 
 
 def maximin_utility(
@@ -61,9 +61,6 @@ def maximin_greedy(
         Selected seed nodes that approximately maximise the maximin fairness utility.
     """
     seed_set = set()
-    spreads = []
-    timelapse = []
-    start_time = time()
 
     group_sizes = {}
 
@@ -74,7 +71,7 @@ def maximin_greedy(
 
     for _ in tqdm(range(k), desc='Selecting seeds'):
         best_node = None
-        best_util = -1
+        best_util = -float('inf')
 
         # Try adding each candidate to current seed set
         for candidate_node in all_nodes:
@@ -104,10 +101,8 @@ def maximin_greedy(
             break
 
         seed_set.add(best_node)
-        spreads.append(best_util)
-        timelapse.append(time() - start_time)
 
-    return seed_set, spreads, timelapse
+    return seed_set
 
 
 # ----------------------------

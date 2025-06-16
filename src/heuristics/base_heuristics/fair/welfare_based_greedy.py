@@ -41,7 +41,7 @@ def isoelastic_welfare(
     """
     if abs(alpha - 1.0) < 1e-6:
         return sum(math.log(u + epsilon) for u in utilities)
-    return sum(((max(u, 0) + epsilon) ** (1 - alpha)) / (1 - alpha) for u in utilities)
+    return sum((u + epsilon) ** (1 - alpha) / (1 - alpha) for u in utilities)
 
 
 def welfare_greedy(
@@ -77,7 +77,7 @@ def welfare_greedy(
     influenced_frac = {c: 0.0 for c in communities}
 
     for _ in tqdm(range(k), desc='Selecting seeds'):
-        best_gain, best_node = -1, None
+        best_gain, best_node = -float('inf'), None
         base_welfare = isoelastic_welfare(
             utilities=influenced_frac.values(),
             alpha=alpha,
@@ -87,10 +87,10 @@ def welfare_greedy(
             if candidate_node in seeds:
                 continue
 
-            tmp_seeds = seeds | {candidate_node}
+            new_seeds = seeds | {candidate_node}
             sims_frac = independent_cascade_community(
-                graph,
-                seeds=tmp_seeds,
+                graph=graph,
+                seeds=new_seeds,
                 probability=probability,
                 num_sims=num_sims,
             )

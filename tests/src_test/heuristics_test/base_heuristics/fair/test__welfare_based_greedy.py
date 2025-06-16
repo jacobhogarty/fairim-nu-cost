@@ -1,24 +1,25 @@
 import pytest
 
-from src import maximin_greedy
+from src import welfare_greedy
 
 
 @pytest.mark.parametrize(
-    "k, p, expected_seed_size",
+    "k, alpha, p, expected_seed_size",
     [
-        (1, 0.5, 1),
-        (2, 0.5, 2),
-        (3, 0.3, 3),
+        (1, 1, 0.5, 1),
+        (2, 1.5, 0.5, 2),
+        (3, 2, 0.3, 3),
     ]
 )
-def test__maximin_greedy_basic(small_graph, small_groups, k, p, expected_seed_size):
+def test__welfare_greedy_basic(small_graph, small_groups, k, alpha, p, expected_seed_size):
     """
-    Test that maximin_greedy returns the correct number of seeds and valid outputs.
+    Test that welfare_greedy returns the correct number of seeds and valid outputs.
 
     Args:
         small_graph: Small directed graph fixture
         small_groups: Dict mapping nodes to groups fixture
         k: Number of seeds to select
+        alpha: Inequality-aversion parameter
         p: Activation probability
         expected_seed_size: Expected number of seeds in output
 
@@ -27,12 +28,13 @@ def test__maximin_greedy_basic(small_graph, small_groups, k, p, expected_seed_si
         - All seeds are valid nodes in the graph
         - Seeds are unique
     """
-    seeds = maximin_greedy(
+    seeds = welfare_greedy(
         graph=small_graph,
-        groups=small_groups,
+        communities=small_groups,
         k=k,
+        alpha=alpha,
         probability=p,
-        num_simulations=10,
+        num_sims=1000,
     )
 
     # Check the correct number of seeds selected

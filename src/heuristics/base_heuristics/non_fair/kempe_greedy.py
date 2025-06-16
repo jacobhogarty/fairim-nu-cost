@@ -3,7 +3,6 @@ Implementation of the Greedy heuristic by Kempe et al. 2003
 """
 import random
 from tqdm import tqdm
-from time import time
 
 import networkx as nx
 
@@ -33,7 +32,7 @@ def kempe_greedy(
     seed_set = set()
 
     for _ in tqdm(range(k), desc='Selecting seeds'):
-        best_spread, best_node = -1, None
+        best_spread, best_node = -float('inf'), None
 
         for node in graph.nodes():
             if node in seed_set:
