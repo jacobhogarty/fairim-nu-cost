@@ -12,6 +12,7 @@ from networkx import (
     draw_networkx_edge_labels,
     get_edge_attributes,
     draw_networkx_nodes,
+    draw_networkx_labels,
 )
 
 from community import best_partition
@@ -24,6 +25,7 @@ from matplotlib.lines import Line2D
 class GraphGenerator(ABC):
     def __init__(self):
         self.graph = None
+        self.node_costs = None
         self.communities = None
 
     @abstractmethod
@@ -86,6 +88,7 @@ class GraphGenerator(ABC):
             node_size: int = 500,
             with_labels: bool = True,
             edge_labels: bool = True,
+            node_labels: bool = True,
     ):
         """
         Visualises the graph
@@ -94,6 +97,7 @@ class GraphGenerator(ABC):
             node_size: Number of nodes
             with_labels: Labels of the graph
             edge_labels: Labels of the edges
+            node_labels: Labels of the nodes
         """
         if self.graph is None:
             raise ValueError('No graph generated yet. Call generate_graph() first')
@@ -154,6 +158,17 @@ class GraphGenerator(ABC):
             node_size=0,
             with_labels=False,
         )
+
+        if node_labels:
+            label_offset = {node: (pos[node][0], pos[node][1] - 0.05) for node in self.graph.nodes()}
+            cost_labels = {node: f"£{self.node_costs.get(node, '?')}" for node in self.graph.nodes()}
+            draw_networkx_labels(
+                self.graph,
+                pos=label_offset,
+                labels=cost_labels,
+                font_size=8,
+                font_color='black',
+            )
 
         if edge_labels and get_edge_attributes(self.graph, 'weight'):
             edge_label_dict = get_edge_attributes(self.graph, 'weight')
