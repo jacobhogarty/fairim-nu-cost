@@ -69,7 +69,13 @@ def fair_greedy(
         needed = sum(max(0, lower_bounds[c] - temp_count[c]) for c in lower_bounds)
         return (len(seed_set) + 1 + needed) <= k
 
-    for _ in tqdm(range(k), desc='Selecting seeds'):
+    # Continue until we hit k
+    iteration = 0
+    max_iterations = k if k is not None else len(graph.nodes())
+
+    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+
+    while iteration < max_iterations:
         best_gain = -float('inf')
         best_node = None
 
@@ -85,8 +91,12 @@ def fair_greedy(
                 continue
 
             # Compute marginal gain
+            new_seeds = seed_set | {candidate_node}
             marginal = estimate_influence(
-                graph, seed_set | {candidate_node}, num_simulations, probability,
+                graph=graph,
+                seeds=new_seeds,
+                num_simulations=num_simulations,
+                propagation_prob=probability,
             ) - current_spread
 
             if marginal > best_gain:
@@ -98,6 +108,16 @@ def fair_greedy(
 
         seed_set.add(best_node)
         count[groups[best_node]] += 1
+
+        iteration += 1
+        progress_bar.update(1)
+        progress_bar.set_postfix(
+            {
+                'seeds': len(seed_set),
+                'spread': best_gain,
+                'groups_count': count,
+            }
+        )
 
     return seed_set
 

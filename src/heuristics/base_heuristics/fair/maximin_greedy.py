@@ -45,7 +45,7 @@ def maximin_greedy(
         k: int,
         probability: float = 0.01,
         num_simulations: int = 100,
-) -> tuple[set, list, list]:
+) -> set:
     """
     Greedy algorithm for selecting a seed set of size k to maximise maximin fairness utility. At each iteration,
     adds the node that maximises the minimum spread ratio across groups.
@@ -69,7 +69,13 @@ def maximin_greedy(
 
     all_nodes = set(graph.nodes())
 
-    for _ in tqdm(range(k), desc='Selecting seeds'):
+    # Continue until we hit k
+    iteration = 0
+    max_iterations = k if k is not None else len(graph.nodes())
+
+    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+
+    while iteration < max_iterations:
         best_node = None
         best_util = -float('inf')
 
@@ -101,6 +107,15 @@ def maximin_greedy(
             break
 
         seed_set.add(best_node)
+
+        iteration += 1
+        progress_bar.update(1)
+        progress_bar.set_postfix(
+            {
+                'seeds': len(seed_set),
+                'util': best_util,
+            }
+        )
 
     return seed_set
 

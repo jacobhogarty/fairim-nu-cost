@@ -3,6 +3,7 @@ Implementation of an experimental heuristic named cost-aware fair influence maxi
 """
 import math
 import random
+import numpy as np
 
 from tqdm import tqdm
 
@@ -47,42 +48,69 @@ def isoelastic_welfare(
 def c_fim(
         graph: nx.Graph,
         communities: set,
-        k: int,
+        max_seeds: int,
         alpha: float,
+        costs: dict,
+        budget: float,
         probability: float = 0.1,
         num_sims: int = 200,
 ):
     """
-    TBD
+    Cost-aware fair influence maximisation algorithm.
+
+    Selects seed nodes to maximise isoelastic social welfare of influence spread
+    across communities while respecting budget constraints.
 
     Args:
-        graph: The input network graph where nodes represent individuals.
-        communities: A set of community identifiers present in the graph.
-        k: Number of seed nodes to select.
-        alpha: Inequality aversion parameter for the isoelastic welfare function.
-        probability: Probability of influence transmission on each edge during the Independent Cascade process.
-                - Default is 0.1.
-        num_sims: Number of simulation runs to estimate expected influence spread for each seed set.
-                - Default is 200.
+        graph: The input network graph where nodes represent individuals
+        communities: A set of community identifiers present in the graph
+        max_seeds: Maximum number of seeds to select (upper bound)
+        alpha: Inequality aversion parameter for the isoelastic welfare function
+        costs: Dictionary mapping node costs
+        budget: Total budget available for seed selection
+        probability: Probability of influence transmission on each edge during the Independent Cascade process
+                - Default is 0.1
+        num_sims: Number of simulation runs to estimate expected influence spread for each seed set
+                - Default is 200
 
     Returns:
-        set: A set of `k` seed nodes selected to maximise the isoelastic social welfare of influence spread across communities.
+        tuple: (selected_seeds, total_cost, final_influenced_fractions)
+            - selected_seeds: Set of selected seed nodes
+            - total_cost: Total cost of selected seeds
+            - final_influenced_fractions: Dictionary of influenced fractions per community
     """
-    seeds = set()
+    seed_set = set()
+    current_cost = 0.0
     influenced_frac = {c: 0.0 for c in communities}
 
-    for _ in tqdm(range(k), desc='Selecting seeds'):
-        best_gain, best_node = -float('inf'), None
+    # Continue until we hit max_seeds limit or budget is exhausted
+    iteration = 0
+    max_iterations = max_seeds if max_seeds is not None else len(graph.nodes())
+
+    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+
+    while iteration < max_iterations:
+        best_score, best_node = -float('inf'), None
+        best_frac = None
+
         base_welfare = isoelastic_welfare(
             utilities=influenced_frac.values(),
             alpha=alpha,
         )
 
+        # Find the best affordable candidate
+        affordable_candidates = 0
         for candidate_node in graph.nodes():
-            if candidate_node in seeds:
+            if candidate_node in seed_set:
                 continue
 
-            new_seeds = seeds | {candidate_node}
+            candidate_cost = costs.get(candidate_node, 1.0)
+            if current_cost + candidate_cost > budget:
+                continue  # Skip unaffordable nodes
+
+            affordable_candidates += 1
+
+            new_seeds = seed_set | {candidate_node}
             sims_frac = independent_cascade_community(
                 graph=graph,
                 seeds=new_seeds,
@@ -95,55 +123,84 @@ def c_fim(
                 alpha=alpha,
             ) - base_welfare
 
-            if gain > best_gain:
-                best_gain, best_node = gain, candidate_node
+            score = gain / candidate_cost  # cost-effectiveness
+            if score > best_score:
+                best_score, best_node = score, candidate_node
                 best_frac = sims_frac
 
-        if best_node is None:
-            break
+        # Check if we found any affordable candidate
+        if best_node is None or affordable_candidates == 0:
+            progress_bar.set_description('No more affordable candidates')
+            break  # No feasible candidate under budget
 
-        seeds.add(best_node)
+        # Add the selected node
+        seed_set.add(best_node)
+        current_cost += costs.get(best_node, 1.0)
         influenced_frac = best_frac
 
-    return seeds
+        iteration += 1
+        progress_bar.update(1)
+        progress_bar.set_postfix(
+            {
+                'seeds': len(seed_set),
+                'cost': f'{current_cost:.2f}/{budget:.2f}',
+                'remaining_budget': f'{budget - current_cost:.2f}',
+                'influenced_frac': f'{influenced_frac}',
+            }
+        )
+
+    progress_bar.close()
+
+    return seed_set, current_cost, influenced_frac
 
 
 # ----------------------------
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
+    random.seed(42)
+    np.random.seed(42)
+
     graph = nx.erdos_renyi_graph(
         n=100,
         p=0.05,
         directed=True,
+        seed=42,
     )
 
-    # Assign communities randomly
-    for i, node in enumerate(graph.nodes()):
-        graph.nodes[node]['community'] = random.randint(0, 2)
+    community_probs = [0.6, 0.3, 0.1]
+
+    for node in graph.nodes():
+        graph.nodes[node]['community'] = random.choices(population=[0, 1, 2], weights=community_probs, k=1)[0]
 
     communities = set(nx.get_node_attributes(graph, 'community').values())
+    costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}
 
-    k = 5  # number of seeds to select
-    alpha = 1.5  # inequality-aversion parameter (higher = more fairness)
-    p = 0.1  # edge activation probability
+    max_seeds = 5  # Maximum number of seeds (upper bound)
+    alpha = 1  # Inequality-aversion parameter (higher = more fairness)
+    p = 0.1  # Edge activation probability
+    budget = 5.0  # Total budget available (realistic given cost range)
 
-    seeds = c_fim(
+    print(f'Budget: {budget}')
+    print(f'Cost range: {min(costs.values()):.2f} - {max(costs.values()):.2f}')
+    print(f'Average cost: {sum(costs.values()) / len(costs):.2f}')
+    print(f'Expected max seeds under budget: ~{budget / (sum(costs.values()) / len(costs)):.0f}')
+
+    seeds, total_cost, final_frac = c_fim(
         graph=graph,
         communities=communities,
-        k=k,
+        max_seeds=max_seeds,
+        budget=budget,
+        costs=costs,
         alpha=alpha,
         probability=p,
         num_sims=1000,
     )
 
-    print(f'Selected seed nodes: {seeds}')
-
-    final_frac = independent_cascade_community(
-        graph=graph,
-        seeds=seeds,
-        probability=0.1,
-        num_sims=500,
-    )
-
+    print(f'Selected {len(seeds)} seed nodes: {seeds}')
+    print(f'Total cost: {total_cost:.2f} / {budget:.2f} (remaining: {budget - total_cost:.2f})')
     print(f'Expected influenced fraction per community: {final_frac}')
+
+    # Verify no budget violation
+    actual_cost = sum(costs.get(node, 1.0) for node in seeds)
+    print(f'Verification - Actual cost: {actual_cost:.2f} <= Budget: {budget:.2f} ? {actual_cost <= budget}')

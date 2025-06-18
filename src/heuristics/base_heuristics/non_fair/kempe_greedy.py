@@ -31,7 +31,13 @@ def kempe_greedy(
     """
     seed_set = set()
 
-    for _ in tqdm(range(k), desc='Selecting seeds'):
+    # Continue until we hit k
+    iteration = 0
+    max_iterations = k if k is not None else len(graph.nodes())
+
+    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+
+    while iteration < max_iterations:
         best_spread, best_node = -float('inf'), None
 
         for node in graph.nodes():
@@ -56,6 +62,15 @@ def kempe_greedy(
 
         seed_set.add(best_node)
 
+        iteration += 1
+        progress_bar.update(1)
+        progress_bar.set_postfix(
+            {
+                'seeds': len(seed_set),
+                'spread': best_spread,
+            }
+        )
+
     return seed_set
 
 
@@ -64,7 +79,7 @@ def kempe_greedy(
 # ----------------------------
 if __name__ == '__main__':
     graph = nx.erdos_renyi_graph(
-        n=30,
+        n=100,
         p=0.05,
         seed=42,
         directed=True,

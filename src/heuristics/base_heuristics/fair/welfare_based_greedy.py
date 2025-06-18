@@ -53,7 +53,7 @@ def welfare_greedy(
         num_sims: int = 200,
 ):
     """
-    Greedy algorithm to select a set of seed nodes that maximises isoelastic social welfare
+    Greedy algorithm by Rahmattalabi et al. to select a set of seed nodes that maximises isoelastic social welfare
     of influence spread over communities in a graph.
 
     This function iteratively selects `k` seed nodes to maximise the expected social welfare
@@ -76,7 +76,13 @@ def welfare_greedy(
     seeds = set()
     influenced_frac = {c: 0.0 for c in communities}
 
-    for _ in tqdm(range(k), desc='Selecting seeds'):
+    # Continue until we hit k
+    iteration = 0
+    max_iterations = k if k is not None else len(graph.nodes())
+
+    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+
+    while iteration < max_iterations:
         best_gain, best_node = -float('inf'), None
         base_welfare = isoelastic_welfare(
             utilities=influenced_frac.values(),
@@ -109,6 +115,16 @@ def welfare_greedy(
 
         seeds.add(best_node)
         influenced_frac = best_frac
+
+        iteration += 1
+        progress_bar.update(1)
+        progress_bar.set_postfix(
+            {
+                'seeds': len(seeds),
+                'gain': f'best_gain:.2f',
+                'influenced_frac': f'{influenced_frac}',
+            }
+        )
 
     return seeds
 
