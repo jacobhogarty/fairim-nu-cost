@@ -4,6 +4,5 @@ from .maximin_greedy import (
     maximin_utility,
 )
 from .welfare_based_greedy import (
-    isoelastic_welfare,
     welfare_greedy,
 )

@@ -11,38 +11,7 @@ import networkx as nx
 
 from src import independent_cascade_community
 
-
-def isoelastic_welfare(
-        utilities: list or dict.values,
-        alpha: float,
-        epsilon: float = 1e-6,
-):
-    """
-    Compute the isoelastic social welfare function for a given set of utilities.
-
-    An isoelastic social welfare function captures preferences over distributions of utilities
-    with varying degrees of inequality aversion, controlled by the parameter `alpha`.
-    When alpha approaches 1, the welfare function approximates the sum of the logarithms of utilities,
-    reflecting a neutral attitude toward inequality (constant relative risk aversion).
-    For other values of alpha, the function models stronger or weaker inequality aversion.
-
-    See http://www.massimodantoni.info/interactive/swf.html for more details.
-
-    Args:
-        utilities: A list or iterable of individual utility values.
-        alpha: Inequality aversion parameter.
-           - alpha = 1 corresponds to log-utility (constant relative risk aversion).
-           - alpha > 1 implies stronger inequality aversion.
-           - alpha < 1 implies weaker inequality aversion.
-        epsilon: A small constant added to utilities to avoid issues with zero or negative values.
-            - Default is 1e-6.
-
-    Returns:
-        float: The computed isoelastic social welfare value aggregated over all utilities.
-    """
-    if abs(alpha - 1.0) < 1e-6:
-        return sum(math.log(u + epsilon) for u in utilities)
-    return sum((u + epsilon) ** (1 - alpha) / (1 - alpha) for u in utilities)
+from src.heuristics.utils import bergson_samuelson_swf
 
 
 def c_fim(
@@ -93,7 +62,7 @@ def c_fim(
         best_score, best_node = -float('inf'), None
         best_frac = None
 
-        base_welfare = isoelastic_welfare(
+        base_welfare = bergson_samuelson_swf(
             utilities=influenced_frac.values(),
             alpha=alpha,
         )
@@ -118,7 +87,7 @@ def c_fim(
                 num_sims=num_sims,
             )
 
-            gain = isoelastic_welfare(
+            gain = bergson_samuelson_swf(
                 utilities=list(sims_frac.values()),
                 alpha=alpha,
             ) - base_welfare

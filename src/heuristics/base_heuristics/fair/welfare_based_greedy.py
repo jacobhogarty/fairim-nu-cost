@@ -3,45 +3,17 @@ Implementation of the welfare based greedy algorithm proposed by Rahmattalabi et
 """
 import math
 import random
+import numpy as np
 
 from tqdm import tqdm
 
 import networkx as nx
 
-from src import independent_cascade_community
+from src import (
+    independent_cascade_community,
+)
 
-
-def isoelastic_welfare(
-        utilities: list or dict.values,
-        alpha: float,
-        epsilon: float = 1e-6,
-):
-    """
-    Compute the isoelastic social welfare function for a given set of utilities.
-
-    An isoelastic social welfare function captures preferences over distributions of utilities
-    with varying degrees of inequality aversion, controlled by the parameter `alpha`.
-    When alpha approaches 1, the welfare function approximates the sum of the logarithms of utilities,
-    reflecting a neutral attitude toward inequality (constant relative risk aversion).
-    For other values of alpha, the function models stronger or weaker inequality aversion.
-
-    See http://www.massimodantoni.info/interactive/swf.html for more details.
-
-    Args:
-        utilities: A list or iterable of individual utility values.
-        alpha: Inequality aversion parameter.
-           - alpha = 1 corresponds to log-utility (constant relative risk aversion).
-           - alpha > 1 implies stronger inequality aversion.
-           - alpha < 1 implies weaker inequality aversion.
-        epsilon: A small constant added to utilities to avoid issues with zero or negative values.
-            - Default is 1e-6.
-
-    Returns:
-        float: The computed isoelastic social welfare value aggregated over all utilities.
-    """
-    if abs(alpha - 1.0) < 1e-6:
-        return sum(math.log(u + epsilon) for u in utilities)
-    return sum((u + epsilon) ** (1 - alpha) / (1 - alpha) for u in utilities)
+from src.heuristics.utils import bergson_samuelson_swf
 
 
 def welfare_greedy(
@@ -84,7 +56,7 @@ def welfare_greedy(
 
     while iteration < max_iterations:
         best_gain, best_node = -float('inf'), None
-        base_welfare = isoelastic_welfare(
+        base_welfare = bergson_samuelson_swf(
             utilities=influenced_frac.values(),
             alpha=alpha,
         )
@@ -101,10 +73,12 @@ def welfare_greedy(
                 num_sims=num_sims,
             )
 
-            gain = isoelastic_welfare(
+            new_welfare = bergson_samuelson_swf(
                 utilities=list(sims_frac.values()),
                 alpha=alpha,
-            ) - base_welfare
+            )
+
+            gain = new_welfare - base_welfare
 
             if gain > best_gain:
                 best_gain, best_node = gain, candidate_node
@@ -121,8 +95,7 @@ def welfare_greedy(
         progress_bar.set_postfix(
             {
                 'seeds': len(seeds),
-                'gain': f'best_gain:.2f',
-                'influenced_frac': f'{influenced_frac}',
+                'influenced': str({k: round(v, 2) for k, v in influenced_frac.items()}),
             }
         )
 
@@ -133,11 +106,14 @@ def welfare_greedy(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
+    random.seed(42)
+    np.random.seed(42)
+
     graph = nx.erdos_renyi_graph(
-        n=100,
+        n=200,
         p=0.05,
-        seed=42,
         directed=True,
+        seed=42,
     )
 
     # Assign communities randomly
@@ -147,7 +123,7 @@ if __name__ == '__main__':
     communities = set(nx.get_node_attributes(graph, 'community').values())
 
     k = 5  # number of seeds to select
-    alpha = 1  # inequality-aversion parameter (higher = more fairness)
+    alpha = 0  # inequality-aversion parameter
     p = 0.1  # edge activation probability
 
     seeds = welfare_greedy(
