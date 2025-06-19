@@ -161,7 +161,11 @@ class GraphGenerator(ABC):
 
         if node_labels:
             label_offset = {node: (pos[node][0], pos[node][1] - 0.05) for node in self.graph.nodes()}
-            cost_labels = {node: f"{self.node_costs.get(node, '?')}%.2f" for node in self.graph.nodes()}
+            cost_labels = {
+                node: f'{float(self.node_costs.get(node)):.2f}'
+                if self.node_costs.get(node, '?') not in ['?', None] else '?' for node in self.graph.nodes()
+            }
+
             draw_networkx_labels(
                 self.graph,
                 pos=label_offset,

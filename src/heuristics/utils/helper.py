@@ -1,5 +1,6 @@
 from math import log
 
+
 def bergson_samuelson_swf(
         utilities: list or dict.values,
         alpha: float,
@@ -23,3 +24,18 @@ def bergson_samuelson_swf(
         return sum(log(u + epsilon) for u in utilities)
 
     return sum((u + epsilon) ** alpha / alpha for u in utilities)
+
+
+def utility_gap(influence_dict: dict) -> float:
+    """
+    Compute the Utility gap which measures the difference between the utilities of a pair of communities.
+
+    Args:
+        influence_dict: Dictionary of influence values i.e., {community: influence}
+
+    Returns:
+        float: The utility gap as a percentage.
+    """
+    if not influence_dict:
+        return 0.0
+    return (max(influence_dict.values()) - min(influence_dict.values()) / sum(influence_dict.values())) * 100

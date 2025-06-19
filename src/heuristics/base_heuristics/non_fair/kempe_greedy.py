@@ -67,7 +67,6 @@ def kempe_greedy(
         progress_bar.set_postfix(
             {
                 'seeds': len(seed_set),
-                'spread': best_spread,
             }
         )
 
