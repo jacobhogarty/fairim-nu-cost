@@ -1,7 +1,6 @@
 """
 Implementation of the welfare based greedy algorithm proposed by Rahmattalabi et al. from 2021.
 """
-import math
 import random
 import numpy as np
 

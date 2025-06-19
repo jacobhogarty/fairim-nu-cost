@@ -1,7 +1,6 @@
 """
 Implementation of an experimental heuristic named cost-aware fair influence maximisation (CFIM).
 """
-import math
 import random
 import numpy as np
 
