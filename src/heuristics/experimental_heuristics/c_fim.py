@@ -42,10 +42,7 @@ def c_fim(
                 - Default is 200
 
     Returns:
-        tuple: (selected_seeds, total_cost, final_influenced_fractions)
-            - selected_seeds: Set of selected seed nodes
-            - total_cost: Total cost of selected seeds
-            - final_influenced_fractions: Dictionary of influenced fractions per community
+        set: A set of `k` seed nodes selected
     """
     seed_set = set()
     current_cost = 0.0
@@ -113,13 +110,13 @@ def c_fim(
                 'seeds': len(seed_set),
                 'cost': f'{current_cost:.2f}/{budget:.2f}',
                 'remaining_budget': f'{budget - current_cost:.2f}',
-                'influenced_frac': f'{influenced_frac}',
+                'influenced': str({k: round(v, 2) for k, v in influenced_frac.items()}),
             }
         )
 
     progress_bar.close()
 
-    return seed_set, current_cost, influenced_frac
+    return seed_set
 
 
 # ----------------------------
@@ -165,10 +162,4 @@ if __name__ == '__main__':
         num_sims=1000,
     )
 
-    print(f'Selected {len(seeds)} seed nodes: {seeds}')
-    print(f'Total cost: {total_cost:.2f} / {budget:.2f} (remaining: {budget - total_cost:.2f})')
-    print(f'Expected influenced fraction per community: {final_frac}')
-
-    # Verify no budget violation
-    actual_cost = sum(costs.get(node, 1.0) for node in seeds)
-    print(f'Verification - Actual cost: {actual_cost:.2f} <= Budget: {budget:.2f} ? {actual_cost <= budget}')
+    print(f'Selected seed nodes: {seeds}')
