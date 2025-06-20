@@ -7,7 +7,7 @@
     <img src="images/uow_logo.png" alt="Logo" width="250" height="300">
   </a>
 
-<h3 align="center">Fair Influence Maximisation with Non-Uniform Costs in Social Networks</h3>
+<h3 align="center">Fair Influence Spread with Non-Uniform Costs in Social Networks</h3>
 
   <p align="center">
     A Python-based project developing  a heuristic algorithm for cost-sensitive, fair influence maximisation in social networks.
