@@ -142,16 +142,11 @@ if __name__ == '__main__':
     costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}
 
     max_seeds = 5  # Maximum number of seeds (upper bound)
-    alpha = 1  # Inequality-aversion parameter (higher = more fairness)
+    alpha = 0  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
-    budget = 5.0  # Total budget available (realistic given cost range)
+    budget = 5.0  # Total budget available
 
-    print(f'Budget: {budget}')
-    print(f'Cost range: {min(costs.values()):.2f} - {max(costs.values()):.2f}')
-    print(f'Average cost: {sum(costs.values()) / len(costs):.2f}')
-    print(f'Expected max seeds under budget: ~{budget / (sum(costs.values()) / len(costs)):.0f}')
-
-    seeds, total_cost, final_frac = c_fim(
+    seeds = c_fim(
         graph=graph,
         communities=communities,
         max_seeds=max_seeds,
