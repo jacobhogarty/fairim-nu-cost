@@ -1,5 +1,5 @@
 """
-Implementation of the Greedy heuristic by Kempe et al. 2003
+Implementation of the Greedy heuristic by Kempe et al. 2003 called the Hill Climbing Algorithm.
 """
 import random
 from tqdm import tqdm
@@ -16,7 +16,7 @@ def kempe_greedy(
         num_simulations: int = 1000,
 ) -> set:
     """
-    Greedy heuristic by Kempe et al. (2003). Iteratively picks nodes with the largest marginal influence spread.
+    Iteratively picks nodes with the largest marginal influence spread.
 
     Args:
         graph: NetworkX graph with nodes and edges

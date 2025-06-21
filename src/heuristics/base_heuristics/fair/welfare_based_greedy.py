@@ -42,7 +42,8 @@ def welfare_greedy(
                 - Default is 200.
 
     Returns:
-        set: A set of `k` seed nodes selected to maximise the isoelastic social welfare of influence spread across communities.
+        set: A set of `k` seed nodes selected to maximise the isoelastic social welfare of influence spread
+        across communities.
     """
     seeds = set()
     influenced_frac = {c: 0.0 for c in communities}
