@@ -96,7 +96,7 @@ def local_search(
     return current
 
 
-def grasp_bimp(
+def grasp_greedy(
         graph: nx.Graph,
         node_costs: dict,
         budget: float,
@@ -146,10 +146,11 @@ if __name__ == "__main__":
         directed=True,
         seed=42,
     )
+
     costs = {node: random.uniform(1, 5) for node in graph.nodes()}
     budget = 15.0
 
-    solution, influence = grasp_bimp(
+    solution, influence = grasp_greedy(
         graph=graph,
         node_costs=costs,
         budget=budget,
