@@ -129,19 +129,22 @@ class GRASP:
 
                 for node in candidates:
                     new_seed = (seed_set - {random_node}) | {node}
-                    evaluations += 1
-                    spread = estimate_influence(
-                        graph=self.graph,
-                        seeds=new_seed,
-                        num_simulations=self.num_sims,
-                        propagation_prob=self.propagation_rate,
-                    )
+                    total_cost = sum(self.costs[n] for n in new_seed)
 
-                    if spread > best_spread:
-                        seed_set = new_seed
-                        best_spread = spread
-                        improved = True
-                        break
+                    if total_cost <= self.budget:
+                        evaluations += 1
+                        spread = estimate_influence(
+                            graph=self.graph,
+                            seeds=new_seed,
+                            num_simulations=self.num_sims,
+                            propagation_prob=self.propagation_rate,
+                        )
+
+                        if spread > best_spread:
+                            seed_set = new_seed
+                            best_spread = spread
+                            improved = True
+                            break
 
                 if improved:
                     break
@@ -175,14 +178,19 @@ class GRASP:
                 best_seed_set = seed_set
                 best_spread = spread
 
+            total_costs = sum(self.costs[n] for n in best_seed_set)
+
             iteration += 1
             progress_bar.update(1)
             progress_bar.set_postfix(
                 {
                     'seeds': len(best_seed_set),
                     'spread': best_spread,
+                    'cost': total_costs,
                 }
             )
+
+        assert total_costs <= self.budget, 'Budget exceeded'
 
         return best_seed_set, best_spread
 
@@ -197,8 +205,8 @@ if __name__ == "__main__":
         directed=True,
     )
     costs = {node: random.randint(1, 10) for node in graph.nodes()}
-    budget = 10
-    alpha = 0.5
+    budget = 25
+    alpha = 0
     max_iter = 50
     p = 0.1
 
@@ -211,6 +219,8 @@ if __name__ == "__main__":
         propagation_rate=p,
     )
     seeds, spread = grasp_solver.solve()
+    used_budget = sum(costs[node] for node in seeds)
 
     print(f'Selected seeds: {seeds}')
     print(f'Estimated spread: {spread}')
+    print(f'Budget used: {used_budget}/{budget}')
