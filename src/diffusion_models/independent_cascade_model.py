@@ -4,6 +4,10 @@ Implementation of Independent Cascade Model from Kempe et al. 2003
 import random
 
 import networkx as nx
+from collections import (
+    deque,
+    defaultdict,
+)
 
 
 def independent_cascade(
@@ -28,19 +32,17 @@ def independent_cascade(
         return set()
 
     active = set(seeds)
-    new = set(seeds)
-    steps = 0
+    queue = deque((node, 0) for node in seeds)  # Include step count
 
-    while new and (max_steps <= 0 or steps < max_steps):
-        next_round = set()
-        for u in new:
-            for v in graph.neighbors(u):
-                if v not in active and random.random() < probability:
-                    next_round.add(v)
+    while queue:
+        current, step = queue.popleft()
+        if max_steps and step >= max_steps:
+            continue
 
-        active.update(next_round)
-        new = next_round
-        steps += 1
+        for neighbor in graph.neighbors(current):
+            if neighbor not in active and random.random() < probability:
+                active.add(neighbor)
+                queue.append((neighbor, step + 1))
 
     return active
 
@@ -68,33 +70,30 @@ def independent_cascade_community(
     if not seeds or len(graph) == 0:
         return {}
 
-    # Get all communities present in the graph
+    # Pre-extract community mapping and initialise count storage
     communities = {
         node: data['community'] for node, data in graph.nodes(data=True) if 'community' in data
     }
-    community_counts = {c: 0 for c in set(communities.values())}
+    community_totals = defaultdict(float)
 
     for _ in range(num_sims):
-        # Use the core independent cascade function for each simulation
         activated = independent_cascade(
             graph=graph,
             seeds=seeds,
             probability=probability,
-            max_steps=max_steps
+            max_steps=max_steps,
         )
+        total_active = len(activated)
+        if total_active == 0:
+            continue
 
-        # Count activated nodes per community
-        counts = {}
+        community_counts = defaultdict(int)
         for node in activated:
             if node in communities:
-                c = communities[node]
-                counts[c] = counts.get(c, 0) + 1
+                community_counts[communities[node]] += 1
 
-        # Normalise by total activated
-        total_active = len(activated)
-        if total_active > 0:
-            for c in community_counts:
-                community_counts[c] += counts.get(c, 0) / total_active
+        for c, count in community_counts.items():
+            community_totals[c] += count / total_active
 
-    # Return average activation rates
-    return {c: community_counts[c] / num_sims for c in community_counts}
+    # Normalise over number of simulations
+    return {c: community_totals[c] / num_sims for c in community_totals}

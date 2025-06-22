@@ -110,7 +110,7 @@ if __name__ == '__main__':
     np.random.seed(42)
 
     graph = nx.erdos_renyi_graph(
-        n=200,
+        n=100,
         p=0.05,
         directed=True,
         seed=42,

@@ -1,139 +1,178 @@
 import random
+
 import networkx as nx
 
+from tqdm import tqdm
 
-def greedy_construction(
-        graph: nx.Graph,
-        node_costs: dict,
-        budget: float,
-        alpha: float = 0.5,
-) -> set:
-    """
-    Construction phase: Build initial solution using static features
-    """
-    degree_centrality = nx.degree_centrality(graph)
-    efficiency = {node: degree_centrality[node] / node_costs[node] for node in graph.nodes()}
-
-    solution = set()
-    remaining_budget = budget
-    candidates = list(graph.nodes())
-
-    while candidates and remaining_budget > 0:
-        # Build Restricted Candidate List (RCL)
-        feasible = [n for n in candidates if node_costs[n] <= remaining_budget]
-        if not feasible:
-            break
-
-        scores = [efficiency[n] for n in feasible]
-        max_score, min_score = max(scores), min(scores)
-        threshold = max_score - alpha * (max_score - min_score)
-
-        rcl = [n for n in feasible if efficiency[n] >= threshold]
-
-        # Select random node from RCL
-        selected = random.choice(rcl)
-        solution.add(selected)
-        remaining_budget -= node_costs[selected]
-        candidates.remove(selected)
-
-    return solution
+from src import estimate_influence
 
 
-def local_search(
-        graph: nx.Graph,
-        solution: set,
-        node_costs: dict,
-        budget: float,
-) -> set:
-    """
-    Local search phase: Improve solution through swaps and additions
-    """
+class GRASP:
+    def __init__(
+            self,
+            graph: nx.Graph,
+            costs: dict,
+            budget: int,
+            alpha: float = 0.5,
+            max_iter: int = 50,
+            max_evaluations: int = 500,
+            num_sims: int = 1000,
+    ):
+        self.graph = graph
+        self.costs = costs
+        self.budget = budget
+        self.alpha = alpha
+        self.max_iter = max_iter
+        self.max_evaluations = max_evaluations
+        self.num_sims = num_sims
 
-    def calculate_influence(nodes):
-        return sum(graph.degree(node) for node in nodes)
+    def _g_dist(self, node: int, seed_set: set[int]) -> float:
+        """
+        Compute a node's adjusted degree based on whether it has connections to the current seed set.
 
-    current = solution.copy()
-    current_influence = calculate_influence(current)
-    improved = True
+        Args:
+            node: The node to evaluate.
+            seed_set: The current set of seed nodes.
 
-    while improved:
-        improved = False
-        best_solution = current
-        best_influence = current_influence
+        Returns:
+            Adjusted degree value used for prioritizing node selection.
+        """
+        degree = self.graph.out_degree(node) if self.graph.is_directed() else self.graph.degree(node)
 
-        # Try swapping nodes
-        for node_out in list(current):
-            temp = current - {node_out}
-            freed_budget = node_costs[node_out]
+        neighbors = set(self.graph.neighbors(node))
 
-            for node_in in graph.nodes():
-                if node_in not in current and node_costs[node_in] <= freed_budget:
-                    new_solution = temp | {node_in}
-                    new_influence = calculate_influence(new_solution)
+        return degree / 2 if neighbors & seed_set else degree
 
-                    if new_influence > best_influence:
-                        best_solution = new_solution
-                        best_influence = new_influence
+    def _construct_solution(self) -> set[int]:
+        """
+        Constructs an initial seed set using a greedy randomised approach.
+
+        Returns:
+            A candidate seed set selected within the budget.
+        """
+        seed_set = set()
+        remaining_budget = self.budget
+        nodes = list(self.graph.nodes())
+        random.shuffle(nodes)
+
+        if not nodes:
+            return seed_set
+
+        random_node = random.choice(nodes)
+        if self.costs[random_node] <= remaining_budget:
+            seed_set.add(random_node)
+            remaining_budget -= self.costs[random_node]
+
+        while remaining_budget > 0:
+            candidate_list = [
+                node for node in self.graph.nodes()
+                if node not in seed_set and self.costs[node] <= remaining_budget
+            ]
+            if not candidate_list:
+                break
+
+            g_values = {node: self._g_dist(node, seed_set) for node in candidate_list}
+            g_min, g_max = min(g_values.values()), max(g_values.values())
+            threshold = g_max - self.alpha * (g_max - g_min)
+            restricted_candidate_list = [node for node in candidate_list if g_values[node] >= threshold]
+
+            if not restricted_candidate_list:
+                break
+
+            random_node = random.choice(restricted_candidate_list)
+            seed_set.add(random_node)
+            remaining_budget -= self.costs[random_node]
+
+        return seed_set
+
+    def _local_search(self, seed_set: set[int]) -> set[int]:
+        """
+        Improve a seed set using local search by attempting beneficial single-node swaps.
+
+        Args:
+            seed_set: The initial seed set.
+
+        Returns:
+            A (locally) improved seed set with potentially higher influence spread.
+        """
+        best_spread = estimate_influence(
+            graph=self.graph,
+            seeds=seed_set,
+            num_simulations=self.num_sims,
+        )
+        evaluations = 0
+        improved = True
+
+        while improved and evaluations < self.max_evaluations:
+            improved = False
+            nodes = list(seed_set)
+            random.shuffle(nodes)
+
+            for random_node in nodes:
+                if evaluations >= self.max_evaluations:
+                    break
+
+                candidate_list = [
+                    v for v in self.graph.nodes()
+                    if v not in seed_set and self.costs[v] <= (self.budget + self.costs[random_node])
+                ]
+                if not candidate_list:
+                    continue
+
+                candidates = random.sample(candidate_list, min(10, len(candidate_list)))
+
+                for node in candidates:
+                    new_seed = (seed_set - {random_node}) | {node}
+                    evaluations += 1
+                    spread = estimate_influence(
+                        graph=self.graph,
+                        seeds=new_seed,
+                        num_simulations=self.num_sims,
+                    )
+
+                    if spread > best_spread:
+                        seed_set = new_seed
+                        best_spread = spread
                         improved = True
+                        break
 
-        # Try adding nodes
-        used_budget = sum(node_costs[n] for n in current)
-        remaining = budget - used_budget
+                if improved:
+                    break
 
-        for node in graph.nodes():
-            if node not in current and node_costs[node] <= remaining:
-                new_solution = current | {node}
-                new_influence = calculate_influence(new_solution)
+        return seed_set
 
-                if new_influence > best_influence:
-                    best_solution = new_solution
-                    best_influence = new_influence
-                    improved = True
+    def solve(self) -> tuple[set[int], float]:
+        """
+        Run the full GRASP optimisation procedure.
 
-        current = best_solution
-        current_influence = best_influence
+        Returns:
+            The best seed set found and its estimated influence spread.
+        """
+        best_seed_set = set()
+        best_spread = 0
 
-    return current
+        iteration = 0
+        progress_bar = tqdm(desc='Selecting seeds', total=self.max_iter)
 
+        while iteration < self.max_iter:
+            seed_set = self._construct_solution()
+            seed_set = self._local_search(seed_set)
+            spread = estimate_influence(self.graph, seed_set)
 
-def grasp_greedy(
-        graph: nx.Graph,
-        node_costs: dict,
-        budget: float,
-        max_iter: int = 50,
-        alpha: float = 0.5,
-) -> tuple[set, int]:
-    """
-    Main GRASP algorithm for Budget Influence Maximization Problem
-    """
-    best_solution = set()
-    best_influence = 0
+            if spread > best_spread:
+                best_seed_set = seed_set
+                best_spread = spread
 
-    for iteration in range(max_iter):
-        # Construction phase
-        initial = greedy_construction(
-            graph=graph,
-            node_costs=node_costs,
-            budget=budget,
-            alpha=alpha,
-        )
+            iteration += 1
+            progress_bar.update(1)
+            progress_bar.set_postfix(
+                {
+                    'seeds': len(best_seed_set),
+                    'spread': best_spread,
+                }
+            )
 
-        # Local search phase
-        improved = local_search(
-            graph=graph,
-            solution=initial,
-            node_costs=node_costs,
-            budget=budget,
-        )
-
-        # Evaluate solution
-        influence = sum(graph.degree(node) for node in improved)
-
-        if influence > best_influence:
-            best_solution = improved
-            best_influence = influence
-
-    return best_solution, best_influence
+        return best_seed_set, best_spread
 
 
 # ----------------------------
@@ -141,22 +180,23 @@ def grasp_greedy(
 # ----------------------------
 if __name__ == "__main__":
     graph = nx.erdos_renyi_graph(
-        n=500,
-        p=0.1,
+        n=100,
+        p=0.05,
         directed=True,
-        seed=42,
     )
+    costs = {node: random.randint(1, 10) for node in graph.nodes()}
+    budget = 10
+    alpha = 0.5
+    max_iter = 50
 
-    costs = {node: random.uniform(1, 5) for node in graph.nodes()}
-    budget = 15.0
-
-    solution, influence = grasp_greedy(
-        graph=graph,
-        node_costs=costs,
-        budget=budget,
+    grasp_solver = GRASP(
+        graph,
+        costs,
+        budget,
+        alpha,
+        max_iter,
     )
+    seeds, spread = grasp_solver.solve()
 
-    print(f'Final solution: {solution}')
-    print(f'Total influence: {influence}')
-    print(f'Total cost: {sum(costs[n] for n in solution)}')
-    print(f'Number of seeds: {len(solution)}')
+    print(f'Selected seeds: {seeds}')
+    print(f'Estimated spread: {spread}')
