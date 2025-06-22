@@ -14,6 +14,7 @@ class GRASP:
             costs: dict,
             budget: int,
             alpha: float = 0.5,
+            propagation_rate: float = 0.1,
             max_iter: int = 50,
             max_evaluations: int = 500,
             num_sims: int = 1000,
@@ -22,6 +23,7 @@ class GRASP:
         self.costs = costs
         self.budget = budget
         self.alpha = alpha
+        self.propagation_rate = propagation_rate
         self.max_iter = max_iter
         self.max_evaluations = max_evaluations
         self.num_sims = num_sims
@@ -99,6 +101,7 @@ class GRASP:
             graph=self.graph,
             seeds=seed_set,
             num_simulations=self.num_sims,
+            propagation_prob=self.propagation_rate,
         )
         evaluations = 0
         improved = True
@@ -128,6 +131,7 @@ class GRASP:
                         graph=self.graph,
                         seeds=new_seed,
                         num_simulations=self.num_sims,
+                        propagation_prob=self.propagation_rate,
                     )
 
                     if spread > best_spread:
@@ -157,7 +161,12 @@ class GRASP:
         while iteration < self.max_iter:
             seed_set = self._construct_solution()
             seed_set = self._local_search(seed_set)
-            spread = estimate_influence(self.graph, seed_set)
+            spread = estimate_influence(
+                graph=self.graph,
+                seeds=seed_set,
+                num_simulations=self.num_sims,
+                propagation_prob=self.propagation_rate,
+            )
 
             if spread > best_spread:
                 best_seed_set = seed_set
@@ -188,13 +197,15 @@ if __name__ == "__main__":
     budget = 10
     alpha = 0.5
     max_iter = 50
+    p = 0.1
 
     grasp_solver = GRASP(
-        graph,
-        costs,
-        budget,
-        alpha,
-        max_iter,
+        graph=graph,
+        costs=costs,
+        budget=budget,
+        alpha=alpha,
+        max_iter=max_iter,
+        propagation_rate=p,
     )
     seeds, spread = grasp_solver.solve()
 
