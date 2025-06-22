@@ -1,12 +1,10 @@
 """
 Implementation of the Greedy heuristic by Kempe et al. 2003 called the Hill Climbing Algorithm.
 """
-import random
+import networkx as nx
 from tqdm import tqdm
 
-import networkx as nx
-
-from src import estimate_influence
+from src import estimate_cascade_influence
 
 
 def kempe_greedy(
@@ -46,11 +44,11 @@ def kempe_greedy(
 
             trial_seed_set = seed_set | {node}
 
-            spread = estimate_influence(
+            spread = estimate_cascade_influence(
                 graph=graph,
                 seeds=trial_seed_set,
                 num_simulations=num_simulations,
-                propagation_prob=probability,
+                probability=probability,
             )
 
             if spread > best_spread:
@@ -84,15 +82,7 @@ if __name__ == '__main__':
         directed=True,
     )
 
-    while not nx.is_weakly_connected(graph):
-        graph = nx.erdos_renyi_graph(
-            n=30,
-            p=0.05,
-            seed=random.randint(0, 1000),
-            directed=True,
-        )
-
-    # Run kempe greedy
+    # Run Kempe greedy
     seeds = kempe_greedy(
         graph=graph,
         k=5,

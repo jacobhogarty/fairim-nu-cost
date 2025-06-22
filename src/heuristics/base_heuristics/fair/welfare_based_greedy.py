@@ -2,16 +2,12 @@
 Implementation of the welfare based greedy algorithm proposed by Rahmattalabi et al. from 2021.
 """
 import random
-import numpy as np
 
 from tqdm import tqdm
 
 import networkx as nx
 
-from src import (
-    independent_cascade_community,
-)
-
+from src import estimate_cascade_by_community
 from src.heuristics.utils import bergson_samuelson_swf
 
 
@@ -66,11 +62,11 @@ def welfare_greedy(
                 continue
 
             new_seeds = seeds | {candidate_node}
-            sims_frac = independent_cascade_community(
+            sims_frac = estimate_cascade_by_community(
                 graph=graph,
                 seeds=new_seeds,
                 probability=probability,
-                num_sims=num_sims,
+                num_simulations=num_sims,
             )
 
             new_welfare = bergson_samuelson_swf(
@@ -106,9 +102,6 @@ def welfare_greedy(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    random.seed(42)
-    np.random.seed(42)
-
     graph = nx.erdos_renyi_graph(
         n=100,
         p=0.05,
@@ -137,10 +130,10 @@ if __name__ == '__main__':
 
     print(f'Selected seed nodes: {seeds}')
 
-    final_frac = independent_cascade_community(
+    final_frac = estimate_cascade_by_community(
         graph=graph,
         seeds=seeds,
         probability=0.1,
-        num_sims=500,
+        num_simulations=500,
     )
     print(f'Expected influenced fraction per community: {final_frac}')

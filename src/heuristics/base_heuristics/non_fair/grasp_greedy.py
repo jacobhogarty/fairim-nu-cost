@@ -7,14 +7,14 @@ import networkx as nx
 
 from tqdm import tqdm
 
-from src import estimate_influence
+from src import estimate_cascade_influence
 
 
 class GRASP:
     def __init__(
             self,
-            graph: nx.Graph,
-            costs: dict,
+            graph: nx.Graph | nx.DiGraph,
+            costs: dict[int, float],
             budget: int,
             alpha: float = 0.5,
             propagation_rate: float = 0.1,
@@ -36,13 +36,13 @@ class GRASP:
         Compute a node's adjusted degree based on whether it has connections to the current seed set.
 
         Args:
-            node: The node to evaluate.
-            seed_set: The current set of seed nodes.
+            node: The node to evaluate
+            seed_set: The current set of seed nodes
 
         Returns:
-            Adjusted degree value used for prioritizing node selection.
+            Adjusted degree value used for prioritising node selection
         """
-        degree = self.graph.out_degree(node) if self.graph.is_directed() else self.graph.degree(node)
+        degree = self.graph.out_degree[node] if self.graph.is_directed() else self.graph.degree[node]
 
         neighbors = set(self.graph.neighbors(node))
 
@@ -55,6 +55,8 @@ class GRASP:
         Returns:
             A candidate seed set selected within the budget.
         """
+        assert 0 <= self.alpha <= 1, 'Alpha must be between 0 and 1'
+
         seed_set = set()
         remaining_budget = self.budget
         nodes = list(self.graph.nodes())
@@ -95,16 +97,16 @@ class GRASP:
         Improve a seed set using local search by attempting beneficial single-node swaps.
 
         Args:
-            seed_set: The initial seed set.
+            seed_set: The initial seed set
 
         Returns:
-            A (locally) improved seed set with potentially higher influence spread.
+            A (locally) improved seed set with potentially higher influence spread
         """
-        best_spread = estimate_influence(
+        best_spread = estimate_cascade_influence(
             graph=self.graph,
             seeds=seed_set,
             num_simulations=self.num_sims,
-            propagation_prob=self.propagation_rate,
+            probability=self.propagation_rate,
         )
         evaluations = 0
         improved = True
@@ -133,11 +135,11 @@ class GRASP:
 
                     if total_cost <= self.budget:
                         evaluations += 1
-                        spread = estimate_influence(
+                        spread = estimate_cascade_influence(
                             graph=self.graph,
                             seeds=new_seed,
                             num_simulations=self.num_sims,
-                            propagation_prob=self.propagation_rate,
+                            probability=self.propagation_rate,
                         )
 
                         if spread > best_spread:
@@ -156,7 +158,7 @@ class GRASP:
         Run the full GRASP optimisation procedure.
 
         Returns:
-            The best seed set found and its estimated influence spread.
+            The best seed set found and its estimated influence spread
         """
         best_seed_set = set()
         best_spread = 0
@@ -166,12 +168,12 @@ class GRASP:
 
         while iteration < self.max_iter:
             seed_set = self._construct_solution()
-            seed_set = self._local_search(seed_set)
-            spread = estimate_influence(
+            seed_set = self._local_search(seed_set=seed_set)
+            spread = estimate_cascade_influence(
                 graph=self.graph,
                 seeds=seed_set,
                 num_simulations=self.num_sims,
-                propagation_prob=self.propagation_rate,
+                probability=self.propagation_rate,
             )
 
             if spread > best_spread:
@@ -200,15 +202,18 @@ class GRASP:
 # ----------------------------
 if __name__ == "__main__":
     graph = nx.erdos_renyi_graph(
-        n=100,
+        n=500,
         p=0.05,
         directed=True,
     )
-    costs = {node: random.randint(1, 10) for node in graph.nodes()}
-    budget = 25
+
+    costs = {node: random.uniform(0.1, 25.0) for node in graph.nodes()}
+
+    budget = 10
     alpha = 0
-    max_iter = 50
     p = 0.1
+    num_sims = 1000
+    max_iter = 50
 
     grasp_solver = GRASP(
         graph=graph,
@@ -216,6 +221,8 @@ if __name__ == "__main__":
         budget=budget,
         alpha=alpha,
         max_iter=max_iter,
+        num_sims=num_sims,
+        max_evaluations=num_sims // 2,
         propagation_rate=p,
     )
     seeds, spread = grasp_solver.solve()
@@ -223,4 +230,4 @@ if __name__ == "__main__":
 
     print(f'Selected seeds: {seeds}')
     print(f'Estimated spread: {spread}')
-    print(f'Budget used: {used_budget}/{budget}')
+    print(f'Budget used: {round(used_budget, 2)}/{budget}')

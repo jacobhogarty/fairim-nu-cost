@@ -11,7 +11,7 @@ from time import time
 import random
 import networkx as nx
 
-from src import estimate_influence_per_group
+from src import estimate_cascade_by_community
 
 
 def maximin_utility(
@@ -86,10 +86,9 @@ def maximin_greedy(
 
             # Estimate spread
             trial_seed_set = list(seed_set) + [candidate_node]
-            spread = estimate_influence_per_group(
+            spread = estimate_cascade_by_community(
                 graph=graph,
                 seeds=trial_seed_set,
-                groups=groups,
                 probability=probability,
                 num_simulations=num_simulations,
             )

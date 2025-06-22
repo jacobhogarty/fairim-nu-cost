@@ -1,4 +1,5 @@
 from .helper import (
-    estimate_influence,
-    estimate_influence_per_group
+    estimate_cascade_influence,
+    estimate_cascade_by_community,
+    independent_cascade,
 )

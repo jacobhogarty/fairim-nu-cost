@@ -1,72 +1,62 @@
-from networkx import Graph
+from typing import Union
 
-from .. import independent_cascade
+import networkx as nx
+
+from src.diffusion_models.independent_cascade_model import IndependentCascadeModel
 
 
-def estimate_influence(
-        graph: Graph,
-        seeds: set,
+def independent_cascade(
+        graph: nx.Graph,
+        seeds: Union[set, list],
+        probability: float = 0.1,
+        max_steps: int = 0,
+        random_state: int = 42,
+) -> set:
+    """
+    Convenience function for single Independent Cascade simulation.
+
+    Returns:
+        Set of nodes activated in one simulation
+    """
+    model = IndependentCascadeModel(graph)
+    return model.run_cascade(seeds, probability, max_steps, random_state)
+
+
+def estimate_cascade_influence(
+        graph: nx.Graph,
+        seeds: Union[set, list],
         num_simulations: int = 100,
-        propagation_prob: float = 0.1
+        probability: float = 0.1,
+        max_steps: int = 0,
+        random_state: int = 42,
 ) -> float:
     """
-    Estimate influence spread via multiple independent cascade simulations.
-
-    Args:
-        graph: NetworkX graph
-        seeds: Set of seed nodes
-        num_simulations: Number of MC simulations
-        propagation_prob: Default activation probability
+    Convenience function for estimating influence spread via multiple simulations.
 
     Returns:
-        Expected influence spread
+        Expected number of activated nodes across simulations
     """
-    total_spread = 0.0
-    for _ in range(num_simulations):
-        spread = independent_cascade(graph, seeds, propagation_prob)
-        total_spread += len(spread)
-    return total_spread / num_simulations
+    model = IndependentCascadeModel(graph)
+    return model.estimate_influence(seeds, num_simulations, probability, max_steps, random_state)
 
 
-def estimate_influence_per_group(
-        graph: Graph,
-        seeds: list,
-        groups: dict,
-        probability: float = 0.01,
+def estimate_cascade_by_community(
+        graph: nx.Graph,
+        seeds: Union[set, list],
         num_simulations: int = 100,
+        probability: float = 0.1,
+        random_state: int = 42,
 ) -> dict:
     """
-    Estimate expected influence (per group) via multiple independent cascade simulations.
-
-    Args:
-        graph: Directed graph representing the network
-        seeds: List of initial seed nodes to start the diffusion
-        groups: Mapping from node to group label
-        probability: Probability of influence along an edge
-        num_simulations: Number of independent cascade simulations to run
+    Convenience function for estimating influence spread by community.
+    Communities are extracted from node 'community' attributes.
 
     Returns:
-        Average number of influenced nodes per group, averaged over simulations
-            - Keys are group labels, values are floats
+        Dictionary of {community: expected_influence_rate}
     """
-    group_counts = {
-        g: 0 for g in set(groups.values())
-    }
+    model = IndependentCascadeModel(graph)
+    return model.estimate_influence_by_community(
+        seeds, probability, num_simulations, random_state,
+    )
 
-    for _ in range(num_simulations):
-        active = independent_cascade(
-            graph=graph,
-            seeds=seeds,
-            probability=probability,
-        )
 
-        # Count influenced per group
-        for v in active:
-            grp = groups[v]
-            group_counts[grp] += 1
-
-    # Average count per simulation
-    for grp in group_counts:
-        group_counts[grp] /= float(num_simulations)
-
-    return group_counts

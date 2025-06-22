@@ -8,7 +8,7 @@ from collections import Counter
 
 import networkx as nx
 
-from src import estimate_influence
+from src import estimate_cascade_influence
 
 
 def fair_greedy(
@@ -79,11 +79,11 @@ def fair_greedy(
         best_gain = -float('inf')
         best_node = None
 
-        current_spread = estimate_influence(
+        current_spread = estimate_cascade_influence(
             graph=graph,
             seeds=seed_set,
             num_simulations=num_simulations,
-            propagation_prob=probability,
+            probability=probability,
         )
 
         for candidate_node in candidate_nodes:
@@ -92,11 +92,11 @@ def fair_greedy(
 
             # Compute marginal gain
             new_seeds = seed_set | {candidate_node}
-            marginal = estimate_influence(
+            marginal = estimate_cascade_influence(
                 graph=graph,
                 seeds=new_seeds,
                 num_simulations=num_simulations,
-                propagation_prob=probability,
+                probability=probability,
             ) - current_spread
 
             if marginal > best_gain:

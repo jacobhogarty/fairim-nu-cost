@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import networkx as nx
 
-from src import independent_cascade_community
+from src import estimate_cascade_by_community
 
 from src.heuristics.utils import bergson_samuelson_swf
 
@@ -76,11 +76,11 @@ def c_fim(
             affordable_candidates += 1
 
             new_seeds = seed_set | {candidate_node}
-            sims_frac = independent_cascade_community(
+            sims_frac = estimate_cascade_by_community(
                 graph=graph,
                 seeds=new_seeds,
                 probability=probability,
-                num_sims=num_sims,
+                num_simulations=num_sims,
             )
 
             gain = bergson_samuelson_swf(
@@ -127,16 +127,15 @@ if __name__ == '__main__':
     np.random.seed(42)
 
     graph = nx.erdos_renyi_graph(
-        n=100,
+        n=300,
         p=0.05,
         directed=True,
         seed=42,
     )
 
-    community_probs = [0.6, 0.3, 0.1]
-
-    for node in graph.nodes():
-        graph.nodes[node]['community'] = random.choices(population=[0, 1, 2], weights=community_probs, k=1)[0]
+    # Assign communities randomly
+    for i, node in enumerate(graph.nodes()):
+        graph.nodes[node]['community'] = random.randint(0, 2)
 
     communities = set(nx.get_node_attributes(graph, 'community').values())
     costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}

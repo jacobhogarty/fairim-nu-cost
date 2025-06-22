@@ -1,6 +1,6 @@
 import pytest
 import networkx as nx
-from src import estimate_influence
+from src import estimate_cascade_influence
 
 
 @pytest.mark.parametrize(
@@ -25,10 +25,10 @@ def test_expected_spread(edges, seed_set, probability, expected_range):
     graph = nx.DiGraph()
     graph.add_edges_from(edges)
 
-    spread = estimate_influence(
+    spread = estimate_cascade_influence(
         graph=graph,
         seeds=seed_set,
-        propagation_prob=probability,
+        probability=probability,
         num_simulations=50,
     )
 
