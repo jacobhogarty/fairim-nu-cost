@@ -1,3 +1,6 @@
+"""
+Implementation of the GRASP algorithm by Lozano‑Osorio et al. 2024
+"""
 import random
 
 import networkx as nx
