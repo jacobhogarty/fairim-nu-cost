@@ -25,14 +25,15 @@ def bergson_samuelson_swf(
         ValueError: If any utility is negative.
     """
     utilities = list(utilities)
+    clamp = lambda x: max(epsilon, min(x, 1))
 
     if any(u < 0 for u in utilities):
-        raise ValueError("Utilities must be non-negative.")
+        raise ValueError('Utilities must be non-negative.')
 
     if abs(alpha) < 1e-6:
-        return sum(log(u + epsilon) for u in utilities)
+        return sum(log(clamp(u)) for u in utilities)
 
-    return sum((u + epsilon) ** alpha / alpha for u in utilities)
+    return sum((clamp(u)) ** alpha / alpha for u in utilities)
 
 
 def utility_gap(influence_dict: dict) -> float:
