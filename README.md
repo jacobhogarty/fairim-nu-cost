@@ -10,7 +10,7 @@
 <h3 align="center">Fair Influence Spread with Non-Uniform Costs in Social Networks</h3>
 
   <p align="center">
-    A Python-based project developing  a heuristic algorithm for cost-sensitive, fair influence maximisation in social networks.
+    A Python-based project developing heuristic algorithms for cost-sensitive, fair influence maximisation in social networks.
     <br />
     <br />
     <a href="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml">
