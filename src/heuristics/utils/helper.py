@@ -1,4 +1,11 @@
-from math import log
+import decimal
+import functools
+import operator
+from math import (
+    factorial,
+    isclose,
+    log,
+)
 
 
 def bergson_samuelson_swf(
@@ -25,15 +32,16 @@ def bergson_samuelson_swf(
         ValueError: If any utility is negative.
     """
     utilities = list(utilities)
-    clamp = lambda x: max(epsilon, min(x, 1))
 
     if any(u < 0 for u in utilities):
-        raise ValueError('Utilities must be non-negative.')
+        raise ValueError('All utilities must be non-negative.')
+
+    clamp = lambda x: max(epsilon, min(x, 1))
 
     if abs(alpha) < 1e-6:
         return sum(log(clamp(u)) for u in utilities)
 
-    return sum((clamp(u)) ** alpha / alpha for u in utilities)
+    return sum(clamp(u) ** alpha / alpha for u in utilities)
 
 
 def utility_gap(influence_dict: dict) -> float:

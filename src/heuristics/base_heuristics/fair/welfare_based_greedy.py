@@ -106,7 +106,6 @@ if __name__ == '__main__':
         n=100,
         p=0.05,
         directed=True,
-        seed=42,
     )
 
     # Assign communities randomly
