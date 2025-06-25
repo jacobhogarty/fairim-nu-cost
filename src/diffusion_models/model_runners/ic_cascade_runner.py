@@ -2,7 +2,7 @@ import networkx as nx
 
 from typing import Union
 
-from src.diffusion_models.independent_cascade_model import IndependentCascadeModel
+from src.diffusion_models.independent_cascade.independent_cascade_model import IndependentCascadeModel
 
 
 def independent_cascade(

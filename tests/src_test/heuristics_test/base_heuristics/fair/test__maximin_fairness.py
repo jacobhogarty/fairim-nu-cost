@@ -1,6 +1,6 @@
 import pytest
 
-from src import maximin_greedy
+from src.heuristics import maximin_greedy
 
 
 @pytest.mark.parametrize(

@@ -1,5 +1,5 @@
 import pytest
-from src import kempe_greedy
+from src.heuristics import kempe_greedy
 
 
 @pytest.mark.parametrize(

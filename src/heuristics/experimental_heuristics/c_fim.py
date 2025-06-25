@@ -8,9 +8,8 @@ from tqdm import tqdm
 
 import networkx as nx
 
-from src import estimate_cascade_by_community
-
-from src.heuristics.utils import bergson_samuelson_swf
+from src.metrics import bergson_samuelson_swf
+from src.diffusion_models import estimate_cascade_by_community
 
 
 def c_fim(
@@ -157,3 +156,12 @@ if __name__ == '__main__':
     )
 
     print(f'Selected seed nodes: {seeds}')
+
+    final_frac = estimate_cascade_by_community(
+        graph=graph,
+        seeds=seeds,
+        probability=p,
+        num_simulations=1000 // 2,
+        random_state=42,
+    )
+    print(f'Expected influenced fraction per community: {final_frac}')

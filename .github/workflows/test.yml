@@ -9,13 +9,13 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
-      - 'data/synthetic/**'
+      - '../../src/data/synthetic/**'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'src/**'
       - 'tests/**'
-      - 'data/synthetic/**'
+      - '../../src/data/synthetic/**'
 
 permissions:
   contents: read

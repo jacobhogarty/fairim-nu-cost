@@ -1,6 +1,6 @@
 import pytest
 
-from src import welfare_greedy
+from src.heuristics import welfare_greedy
 
 
 @pytest.mark.parametrize(

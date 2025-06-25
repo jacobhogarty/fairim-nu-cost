@@ -1,6 +1,6 @@
 import pytest
 import networkx as nx
-from data import GraphGenerator
+from src.data import GraphGenerator
 
 
 @pytest.fixture

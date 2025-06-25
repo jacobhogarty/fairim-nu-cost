@@ -7,7 +7,7 @@ import networkx as nx
 
 from tqdm import tqdm
 
-from src import (
+from src.diffusion_models import (
     estimate_cascade_influence,
     estimate_cascade_by_community,
 )
@@ -214,9 +214,9 @@ if __name__ == "__main__":
     for i, node in enumerate(graph.nodes()):
         graph.nodes[node]['community'] = random.randint(0, 2)
 
-    costs = {node: random.uniform(1.0, 25.0) for node in graph.nodes()}
+    costs = {node: random.uniform(1.0, 5.0) for node in graph.nodes()}
 
-    budget = 2
+    budget = 25
     alpha = 0
     p = 0.1
     num_sims = 1000
@@ -244,5 +244,6 @@ if __name__ == "__main__":
         seeds=seeds,
         probability=p,
         num_simulations=num_sims // 2,
+        random_state=42,
     )
     print(f'Expected influenced fraction per community: {final_frac}')

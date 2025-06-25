@@ -5,13 +5,12 @@ Note: this implementation technically doesn't work as Tsang et al. found that th
 it cannot be solved via independent cascade and requires multi-objective linear optimisation, which is an extremely
 non-trivial problem.
 """
-from tqdm import tqdm
-from time import time
-
 import random
-import networkx as nx
 
-from src import estimate_cascade_by_community
+import networkx as nx
+from tqdm import tqdm
+
+from src.diffusion_models import estimate_cascade_by_community
 
 
 def maximin_utility(

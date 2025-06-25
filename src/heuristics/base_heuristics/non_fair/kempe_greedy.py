@@ -4,7 +4,7 @@ Implementation of the Greedy heuristic by Kempe et al. 2003 called the Hill Clim
 import networkx as nx
 from tqdm import tqdm
 
-from src import estimate_cascade_influence
+from src.diffusion_models.model_runners import estimate_cascade_influence
 
 
 def kempe_greedy(

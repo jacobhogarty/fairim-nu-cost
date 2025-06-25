@@ -12,7 +12,9 @@ from numba import (
 )
 
 
-def graph_to_arrays(graph: nx.Graph) -> tuple:
+def graph_to_arrays(
+        graph: nx.Graph | nx.DiGraph,
+) -> tuple[np.ndarray, dict, dict]:
     """
     Convert NetworkX graph to efficient array representation for Numba.
     """
@@ -31,7 +33,10 @@ def graph_to_arrays(graph: nx.Graph) -> tuple:
 
 
 @jit(nopython=True, cache=True)
-def _build_adjacency_lists(edges: np.ndarray, num_nodes: int):
+def _build_adjacency_lists(
+        edges: np.ndarray,
+        num_nodes: int,
+):
     """
     Build compressed adjacency list representation from edge array.
     """
@@ -195,7 +200,7 @@ class IndependentCascadeModel:
     Optimised Independent Cascade Model using Numba acceleration.
     """
 
-    def __init__(self, graph: nx.Graph):
+    def __init__(self, graph: nx.Graph | nx.DiGraph, ):
         self.original_graph = graph
         self.edges, self.node_to_idx, self.idx_to_node = graph_to_arrays(graph)
         self.num_nodes = len(self.node_to_idx)
@@ -213,11 +218,10 @@ class IndependentCascadeModel:
         """
         Convert seed nodes to array indices.
         """
-        seed_indices = []
-        for seed in seeds:
-            if seed in self.node_to_idx:
-                seed_indices.append(self.node_to_idx[seed])
-        return np.array(seed_indices, dtype=np.int32)
+        return np.array(
+            [self.node_to_idx[s] for s in seeds if s in self.node_to_idx],
+            dtype=np.int32,
+        )
 
     def run_cascade(
             self,
@@ -341,7 +345,7 @@ class IndependentCascadeModel:
 
         community_counts = _estimate_influence_per_group_parallel(
             neighbours=self.neighbours,
-            offset=self.offsets,
+            offsets=self.offsets,
             seeds=seed_indices,
             node_groups=node_communities,
             probability=probability,

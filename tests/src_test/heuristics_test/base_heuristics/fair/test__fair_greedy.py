@@ -1,6 +1,6 @@
 import pytest
 
-from src import fair_greedy
+from src.heuristics import fair_greedy
 
 
 @pytest.mark.parametrize(

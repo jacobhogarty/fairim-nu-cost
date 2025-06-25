@@ -8,7 +8,7 @@ from collections import Counter
 
 import networkx as nx
 
-from src import estimate_cascade_influence
+from src.diffusion_models import estimate_cascade_influence
 
 
 def fair_greedy(

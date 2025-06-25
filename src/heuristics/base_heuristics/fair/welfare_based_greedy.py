@@ -7,8 +7,11 @@ from tqdm import tqdm
 
 import networkx as nx
 
-from src import estimate_cascade_by_community
-from src.heuristics.utils import bergson_samuelson_swf
+from src.diffusion_models import estimate_cascade_by_community
+from src.metrics import (
+    bergson_samuelson_swf,
+    utility_gap,
+)
 
 
 def welfare_greedy(
@@ -136,3 +139,4 @@ if __name__ == '__main__':
         num_simulations=500,
     )
     print(f'Expected influenced fraction per community: {final_frac}')
+    print(f'Utility Gap: {utility_gap(final_frac)}')
