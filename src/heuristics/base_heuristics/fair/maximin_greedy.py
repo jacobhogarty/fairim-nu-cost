@@ -130,14 +130,6 @@ if __name__ == '__main__':
         directed=True,
     )
 
-    while not nx.is_weakly_connected(graph):
-        graph = nx.erdos_renyi_graph(
-            n=30,
-            p=0.05,
-            seed=random.randint(0, 1000),
-            directed=True,
-        )
-
     # Assign communities randomly
     communities = {node: random.randint(0, 2) for node in graph.nodes()}  # 3 communities
 

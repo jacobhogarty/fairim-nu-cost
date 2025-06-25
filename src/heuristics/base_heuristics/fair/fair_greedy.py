@@ -126,7 +126,6 @@ def fair_greedy(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    # Create a simple directed graph with group labels
     graph = nx.DiGraph()
     graph.add_edges_from(
         [

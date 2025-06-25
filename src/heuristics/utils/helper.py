@@ -1,5 +1,7 @@
+"""
+Helper file of the Bergson-Samuelson isoelastic social welfare and additional evaluation metrics such as utility gap.
+"""
 from math import log
-
 
 
 def bergson_samuelson_swf(
@@ -13,17 +15,17 @@ def bergson_samuelson_swf(
     Args:
         utilities: Iterable of individual utility values.
         alpha: Inequality aversion parameter:
-            - alpha = 0: Logarithmic (Nash welfare).
-            - alpha < 1: Decreasing alpha increases inequality aversion.
-            - alpha = 1: Utilitarian (sum of utilities).
+            - alpha = 0: Logarithmic (Nash welfare)
+            - alpha < 1: Decreasing alpha increases inequality aversion
+            - alpha = 1: Utilitarian (sum of utilities)
         epsilon: Small constant to avoid undefined values for zero utilities.
-            - Only used when alpha <= 0. Default is 1e-10.
+            - Only used when alpha <= 0. Default is 1e-10
 
     Returns:
-        float: The aggregated social welfare value.
+        float: The aggregated social welfare value
 
     Raises:
-        ValueError: If any utility is negative.
+        ValueError: If any utility is negative
     """
     utilities = list(utilities)
 
@@ -46,7 +48,7 @@ def utility_gap(influence_dict: dict) -> float:
         influence_dict: Dictionary of influence values i.e., {community: influence}
 
     Returns:
-        float: The utility gap as a percentage.
+        float: The utility gap as a percentage
     """
     if not influence_dict:
         return 0.0

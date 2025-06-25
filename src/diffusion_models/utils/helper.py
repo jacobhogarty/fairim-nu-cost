@@ -60,7 +60,7 @@ def estimate_cascade_by_community(
 ) -> dict:
     """
     Convenience function for estimating influence spread by community.
-    Communities are extracted from node 'community' attributes.
+        - Communities are extracted from node 'community' attributes.
 
     Returns:
         Dictionary of {community: expected_influence_rate}
