@@ -1,5 +1,5 @@
 """
-Implementation of the GRASP algorithm by Lozano‑Osorio et al. 2024
+Implementation of the GRASP algorithm by Lozano‑Osorio et al. in 2024.
 """
 import random
 
@@ -7,7 +7,10 @@ import networkx as nx
 
 from tqdm import tqdm
 
-from src import estimate_cascade_influence
+from src import (
+    estimate_cascade_influence,
+    estimate_cascade_by_community,
+)
 
 
 class GRASP:
@@ -53,7 +56,7 @@ class GRASP:
         Constructs an initial seed set using a greedy randomised approach.
 
         Returns:
-            A candidate seed set selected within the budget.
+            A candidate seed set selected within the budget
         """
         assert 0 <= self.alpha <= 1, 'Alpha must be between 0 and 1'
 
@@ -169,6 +172,7 @@ class GRASP:
         while iteration < self.max_iter:
             seed_set = self._construct_solution()
             seed_set = self._local_search(seed_set=seed_set)
+
             spread = estimate_cascade_influence(
                 graph=self.graph,
                 seeds=seed_set,
@@ -207,9 +211,12 @@ if __name__ == "__main__":
         directed=True,
     )
 
-    costs = {node: random.uniform(0.1, 25.0) for node in graph.nodes()}
+    for i, node in enumerate(graph.nodes()):
+        graph.nodes[node]['community'] = random.randint(0, 2)
 
-    budget = 10
+    costs = {node: random.uniform(1.0, 25.0) for node in graph.nodes()}
+
+    budget = 2
     alpha = 0
     p = 0.1
     num_sims = 1000
@@ -231,3 +238,11 @@ if __name__ == "__main__":
     print(f'Selected seeds: {seeds}')
     print(f'Estimated spread: {spread}')
     print(f'Budget used: {round(used_budget, 2)}/{budget}')
+
+    final_frac = estimate_cascade_by_community(
+        graph=graph,
+        seeds=seeds,
+        probability=p,
+        num_simulations=num_sims // 2,
+    )
+    print(f'Expected influenced fraction per community: {final_frac}')

@@ -1,12 +1,15 @@
 """
-Implementation of Independent Cascade Model from Kempe et al. 2003.
-Streamlined version with removed redundancy.
+Implementation of Independent Cascade Model from Kempe et al. 2003 using Numba for computational acceleration.
 """
+import numpy as np
+import networkx as nx
+
 from typing import Union
 
-import networkx as nx
-import numpy as np
-from numba import jit, prange
+from numba import (
+    jit,
+    prange,
+)
 
 
 def graph_to_arrays(graph: nx.Graph) -> tuple:
@@ -42,22 +45,22 @@ def _build_adjacency_lists(edges: np.ndarray, num_nodes: int):
     for i in range(num_nodes):
         offsets[i + 1] = offsets[i] + out_degrees[i]
 
-    # Fill neighbors array
-    neighbors = np.zeros(edges.shape[0], dtype=np.int32)
+    # Fill neighbours array
+    neighbours = np.zeros(edges.shape[0], dtype=np.int32)
     current_pos = offsets[:-1].copy()
 
     for i in range(edges.shape[0]):
         src = edges[i, 0]
         dst = edges[i, 1]
-        neighbors[current_pos[src]] = dst
+        neighbours[current_pos[src]] = dst
         current_pos[src] += 1
 
-    return neighbors, offsets
+    return neighbours, offsets
 
 
 @jit(nopython=True, cache=True)
 def _independent_cascade_core(
-        neighbors: np.ndarray,
+        neighbours: np.ndarray,
         offsets: np.ndarray,
         seeds: np.ndarray,
         probability: float,
@@ -77,7 +80,7 @@ def _independent_cascade_core(
     queue_size = 0
     queue_pos = 0
 
-    # Initialize with seeds
+    # Initialise with seeds
     for seed in seeds:
         if seed < num_nodes and not active[seed]:
             active[seed] = True
@@ -95,12 +98,12 @@ def _independent_cascade_core(
         if 0 < max_steps <= current_step:
             continue
 
-        # Check all neighbors
+        # Check all neighbours
         start_idx = offsets[current_node]
         end_idx = offsets[current_node + 1]
 
         for i in range(start_idx, end_idx):
-            neighbor = neighbors[i]
+            neighbor = neighbours[i]
             if not active[neighbor] and np.random.random() < probability:
                 active[neighbor] = True
                 if queue_size < max_queue_size:
@@ -113,7 +116,7 @@ def _independent_cascade_core(
 
 @jit(nopython=True, parallel=True, cache=True)
 def _estimate_influence_parallel(
-        neighbors: np.ndarray,
+        neighbours: np.ndarray,
         offsets: np.ndarray,
         seeds: np.ndarray,
         probability: float,
@@ -129,7 +132,12 @@ def _estimate_influence_parallel(
     for i in prange(num_simulations):
         thread_seed = base_seed + i * 12345
         activated = _independent_cascade_core(
-            neighbors, offsets, seeds, probability, max_steps, thread_seed
+            neighbours=neighbours,
+            offsets=offsets,
+            seeds=seeds,
+            probability=probability,
+            max_steps=max_steps,
+            random_state=thread_seed,
         )
         total_spread += len(activated)
 
@@ -138,7 +146,7 @@ def _estimate_influence_parallel(
 
 @jit(nopython=True, parallel=True, cache=True)
 def _estimate_influence_per_group_parallel(
-        neighbors: np.ndarray,
+        neighbours: np.ndarray,
         offsets: np.ndarray,
         seeds: np.ndarray,
         node_groups: np.ndarray,
@@ -155,22 +163,25 @@ def _estimate_influence_per_group_parallel(
     for i in prange(num_simulations):
         thread_seed = base_seed + i * 12345
         activated = _independent_cascade_core(
-            neighbors, offsets, seeds, probability, 0, thread_seed
+            neighbours=neighbours,
+            offsets=offsets,
+            seeds=seeds,
+            probability=probability,
+            max_steps=0,
+            random_state=thread_seed,
         )
 
         if len(activated) > 0:
-            # For rates: count per group divided by total activated in this simulation
             local_group_counts = np.zeros(num_groups, dtype=np.float64)
             for node in activated:
                 if node < len(node_groups):
                     local_group_counts[node_groups[node]] += 1.0
 
-            # Normalize by total activated in this simulation
+            # Normalise by total activated in this simulation
             total_activated = float(len(activated))
             for g in range(num_groups):
                 group_totals[g] += local_group_counts[g] / total_activated
         else:
-            # For counts: just sum the counts
             for node in activated:
                 if node < len(node_groups):
                     group = node_groups[node]
@@ -190,9 +201,12 @@ class IndependentCascadeModel:
         self.num_nodes = len(self.node_to_idx)
 
         if len(self.edges) > 0:
-            self.neighbors, self.offsets = _build_adjacency_lists(self.edges, self.num_nodes)
+            self.neighbours, self.offsets = _build_adjacency_lists(
+                edges=self.edges,
+                num_nodes=self.num_nodes,
+            )
         else:
-            self.neighbors = np.array([], dtype=np.int32)
+            self.neighbours = np.array([], dtype=np.int32)
             self.offsets = np.zeros(self.num_nodes + 1, dtype=np.int32)
 
     def _convert_seeds(self, seeds: Union[set, list]) -> np.ndarray:
@@ -210,7 +224,7 @@ class IndependentCascadeModel:
             seeds: Union[set, list],
             probability: float = 0.1,
             max_steps: int = 0,
-            random_state: int = 42
+            random_state: int = 42,
     ) -> set:
         """
         Run a single Independent Cascade simulation.
@@ -232,8 +246,12 @@ class IndependentCascadeModel:
             return set()
 
         activated_indices = _independent_cascade_core(
-            self.neighbors, self.offsets, seed_indices,
-            probability, max_steps, random_state
+            neighbours=self.neighbours,
+            offsets=self.offsets,
+            seeds=seed_indices,
+            probability=probability,
+            max_steps=max_steps,
+            random_state=random_state,
         )
 
         return {self.idx_to_node[idx] for idx in activated_indices}
@@ -251,7 +269,7 @@ class IndependentCascadeModel:
 
         Args:
             seeds: Set of seed nodes
-            num_simulations: Number of MC simulations
+            num_simulations: Number of simulations
             probability: Activation probability
             max_steps: Maximum propagation steps
             random_state: Base random seed
@@ -267,8 +285,13 @@ class IndependentCascadeModel:
             return 0.0
 
         return _estimate_influence_parallel(
-            self.neighbors, self.offsets, seed_indices,
-            probability, num_simulations, max_steps, random_state
+            neighbours=self.neighbours,
+            offsets=self.offsets,
+            seeds=seed_indices,
+            probability=probability,
+            num_simulations=num_simulations,
+            max_steps=max_steps,
+            base_seed=random_state,
         )
 
     def estimate_influence_by_community(
@@ -280,6 +303,7 @@ class IndependentCascadeModel:
     ) -> dict:
         """
         Estimate expected influence per community via parallel simulations.
+
         Communities are extracted from node 'community' attributes.
 
         Args:
@@ -316,11 +340,16 @@ class IndependentCascadeModel:
                 node_communities[node_idx] = community_idx
 
         community_counts = _estimate_influence_per_group_parallel(
-            self.neighbors, self.offsets, seed_indices, node_communities,
-            probability, num_simulations, len(unique_communities), random_state,
+            neighbours=self.neighbours,
+            offset=self.offsets,
+            seeds=seed_indices,
+            node_groups=node_communities,
+            probability=probability,
+            num_simulations=num_simulations,
+            num_groups=len(unique_communities),
+            base_seed=random_state,
         )
 
-        # Create a dictionary from counts
         result: dict = {unique_communities[i]: count for i, count in enumerate(community_counts)}
 
         total_influenced = sum(result.values())

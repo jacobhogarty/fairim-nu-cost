@@ -1,6 +1,6 @@
-from typing import Union
-
 import networkx as nx
+
+from typing import Union
 
 from src.diffusion_models.independent_cascade_model import IndependentCascadeModel
 
@@ -19,7 +19,12 @@ def independent_cascade(
         Set of nodes activated in one simulation
     """
     model = IndependentCascadeModel(graph)
-    return model.run_cascade(seeds, probability, max_steps, random_state)
+    return model.run_cascade(
+        seeds=seeds,
+        probability=probability,
+        max_steps=max_steps,
+        random_state=random_state,
+    )
 
 
 def estimate_cascade_influence(
@@ -37,7 +42,13 @@ def estimate_cascade_influence(
         Expected number of activated nodes across simulations
     """
     model = IndependentCascadeModel(graph)
-    return model.estimate_influence(seeds, num_simulations, probability, max_steps, random_state)
+    return model.estimate_influence(
+        seeds=seeds,
+        probability=probability,
+        num_simulations=num_simulations,
+        random_state=random_state,
+        max_steps=max_steps,
+    )
 
 
 def estimate_cascade_by_community(
@@ -56,7 +67,8 @@ def estimate_cascade_by_community(
     """
     model = IndependentCascadeModel(graph)
     return model.estimate_influence_by_community(
-        seeds, probability, num_simulations, random_state,
+        seeds=seeds,
+        probability=probability,
+        num_simulations=num_simulations,
+        random_state=random_state,
     )
-
-
