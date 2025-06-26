@@ -6,9 +6,9 @@ from src.heuristics import welfare_greedy
 @pytest.mark.parametrize(
     "k, alpha, p, expected_seed_size",
     [
-        (1, 1, 0.5, 1),
-        (2, 1.5, 0.5, 2),
-        (3, 2, 0.3, 3),
+        (1, -9, 0.5, 1),
+        (2, 0, 0.5, 2),
+        (3, 1, 0.3, 3),
     ]
 )
 def test__welfare_greedy_basic(small_graph, small_groups, k, alpha, p, expected_seed_size):
