@@ -29,8 +29,9 @@ def bergson_samuelson_swf(
     Raises:
         ValueError: If any utility is negative
     """
+    assert alpha <= 1, 'Alpha must be less or equal to 1.'
 
-    @njit
+    @njit(cache=True)
     def _swf_numba_accelerator(
             utilities: np.ndarray,
             alpha: float,
@@ -66,7 +67,7 @@ def bergson_samuelson_swf(
     )
 
 
-@njit
+@njit(cache=True)
 def gini_coefficient(values: list[float]) -> float:
     """
     Compute the Gini coefficient for a list of numeric values.

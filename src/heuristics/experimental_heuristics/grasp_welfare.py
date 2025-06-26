@@ -7,25 +7,20 @@ local search, and evaluates them via information diffusion simulations.
 """
 import random
 
-import numpy as np
 import networkx as nx
 from tqdm import tqdm
 
-from src.heuristics import GRASP
 from src.diffusion_models import estimate_cascade_by_community
+from src.heuristics import GRASP
 from src.metrics import (
     bergson_samuelson_swf,
     utility_gap,
-    gini_coefficient,
 )
 
 
 class WelfareGRASP(GRASP):
     """
     An extension of the GRASP algorithm to maximise social welfare with fairness adjustments.
-
-    Attributes:
-        lambda_fair: Weight applied to fairness in the objective function.
     """
 
     def __init__(
@@ -38,7 +33,6 @@ class WelfareGRASP(GRASP):
             max_iter: int = 50,
             max_evaluations: int = 500,
             num_sims: int = 1000,
-            lambda_fair: float | None = None,
     ) -> None:
         """
         Initialises the WelfareGRASP algorithm.
@@ -52,7 +46,6 @@ class WelfareGRASP(GRASP):
             max_iter (int): Number of GRASP iterations.
             max_evaluations (int): Max evaluations in local search.
             num_sims (int): Number of simulations to estimate influence.
-            lambda_fair (float | None): Weight for fairness adjustment. Defaults to 0.5 * alpha.
         """
         super().__init__(
             graph=graph,
@@ -64,9 +57,8 @@ class WelfareGRASP(GRASP):
             max_evaluations=max_evaluations,
             num_sims=num_sims,
         )
-        self.lambda_fair = lambda_fair if lambda_fair is not None else 0.5 * alpha
 
-    def _evaluate_seed_set(self, seed_set: set[int]) -> tuple[float, float]:
+    def _evaluate_seed_set(self, seed_set: set[int]) -> float:
         """
         Evaluate a seed set based on adjusted welfare and fairness.
 
@@ -82,10 +74,11 @@ class WelfareGRASP(GRASP):
             probability=self.propagation_rate,
             num_simulations=self.num_sims,
         )
-        welfare = bergson_samuelson_swf(list(frac.values()), alpha=self.alpha)
-        fairness_score = gini_coefficient(list(frac.values()))
-        adjusted_score = welfare + self.lambda_fair * (1 - fairness_score)
-        return adjusted_score, welfare
+
+        return bergson_samuelson_swf(
+            utilities=list(frac.values()),
+            alpha=self.alpha,
+        )
 
     def _local_search(self, seed_set: set[int]) -> set[int]:
         """
@@ -97,7 +90,7 @@ class WelfareGRASP(GRASP):
         Returns:
             Locally optimised seed set
         """
-        best_score, best_welfare = self._evaluate_seed_set(seed_set)
+        best_score = self._evaluate_seed_set(seed_set)
         evaluations = 0
         improved = True
 
@@ -117,7 +110,7 @@ class WelfareGRASP(GRASP):
                         continue
 
                     evaluations += 1
-                    score, _ = self._evaluate_seed_set(new_seed)
+                    score = self._evaluate_seed_set(new_seed)
                     if score > best_score:
                         seed_set = new_seed
                         best_score = score
@@ -128,7 +121,7 @@ class WelfareGRASP(GRASP):
 
         return seed_set
 
-    def solve(self) -> tuple[set[int], float]:
+    def solve(self) -> set[int]:
         """
         Execute the GRASP algorithm with fairness-aware evaluation.
 
@@ -137,7 +130,6 @@ class WelfareGRASP(GRASP):
         """
         best_seed_set = set()
         best_score = -float('inf')
-        best_welfare = 0
 
         iteration = 0
         progress_bar = tqdm(desc='Selecting seeds', total=self.max_iter)
@@ -146,40 +138,33 @@ class WelfareGRASP(GRASP):
             seed_set = self._construct_solution()
             seed_set = self._local_search(seed_set=seed_set)
 
-            score, welfare = self._evaluate_seed_set(seed_set)
+            score = self._evaluate_seed_set(seed_set)
 
             if score > best_score:
                 best_seed_set = seed_set
                 best_score = score
-                best_welfare = welfare
 
             iteration += 1
             progress_bar.update(1)
             progress_bar.set_postfix(
                 {
                     'seeds': len(best_seed_set),
-                    'welfare': round(welfare, 4),
-                    'adj_score': round(score, 4),
                     'cost': sum(self.costs[n] for n in best_seed_set),
                 }
             )
 
         progress_bar.close()
-        return best_seed_set, best_welfare
+        return best_seed_set
 
 
 # ----------------------------
 # Example Usage
 # ----------------------------
 if __name__ == "__main__":
-    random.seed(42)
-    np.random.seed(42)
-
     graph = nx.erdos_renyi_graph(
         n=1000,
         p=0.05,
         directed=True,
-        seed=42,
     )
 
     # Assign communities randomly
@@ -197,9 +182,9 @@ if __name__ == "__main__":
         graph=graph,
         costs=costs,
         budget=budget,
-        alpha=0.3,
+        alpha=1,
     )
-    seeds, welfare = grasp.solve()
+    seeds = grasp.solve()
 
     print(f'Selected seed nodes: {seeds}')
 

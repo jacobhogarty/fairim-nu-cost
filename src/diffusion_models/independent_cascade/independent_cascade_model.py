@@ -127,7 +127,7 @@ def _estimate_influence_parallel(
         probability: float,
         num_simulations: int,
         max_steps: int = 0,
-        base_seed: int = 42
+        base_seed: int = 42,
 ) -> float:
     """
     Parallel estimation of influence spread using multiple simulations.

@@ -7,6 +7,7 @@ import networkx as nx
 
 from tqdm import tqdm
 
+from src.metrics import utility_gap
 from src.diffusion_models import (
     estimate_cascade_influence,
     estimate_cascade_by_community,
@@ -47,9 +48,7 @@ class GRASP:
         """
         degree = self.graph.out_degree[node] if self.graph.is_directed() else self.graph.degree[node]
 
-        neighbors = set(self.graph.neighbors(node))
-
-        return degree / 2 if neighbors & seed_set else degree
+        return degree / 2 if set(self.graph.neighbors(node)) & seed_set else degree
 
     def _construct_solution(self) -> set[int]:
         """
@@ -58,8 +57,6 @@ class GRASP:
         Returns:
             A candidate seed set selected within the budget
         """
-        assert 0 <= self.alpha <= 1, 'Alpha must be between 0 and 1'
-
         seed_set = set()
         remaining_budget = self.budget
         nodes = list(self.graph.nodes())
@@ -206,7 +203,7 @@ class GRASP:
 # ----------------------------
 if __name__ == "__main__":
     graph = nx.erdos_renyi_graph(
-        n=500,
+        n=100,
         p=0.05,
         directed=True,
     )
@@ -247,3 +244,4 @@ if __name__ == "__main__":
         random_state=42,
     )
     print(f'Expected influenced fraction per community: {final_frac}')
+    print(f'Utility Gap: {utility_gap(final_frac)}')

@@ -2,20 +2,20 @@
 Implementation of an experimental heuristic named cost-aware fair influence maximisation (CFIM).
 """
 import random
-import numpy as np
-
-from tqdm import tqdm
 
 import networkx as nx
+from tqdm import tqdm
 
-from src.metrics import bergson_samuelson_swf
 from src.diffusion_models import estimate_cascade_by_community
+from src.metrics import (
+    bergson_samuelson_swf,
+    utility_gap,
+)
 
 
 def c_fim(
         graph: nx.Graph,
         communities: set,
-        max_seeds: int,
         alpha: float,
         costs: dict,
         budget: float,
@@ -31,7 +31,6 @@ def c_fim(
     Args:
         graph: The input network graph where nodes represent individuals
         communities: A set of community identifiers present in the graph
-        max_seeds: Maximum number of seeds to select (upper bound)
         alpha: Inequality aversion parameter for the isoelastic welfare function
         costs: Dictionary mapping node costs
         budget: Total budget available for seed selection
@@ -49,8 +48,7 @@ def c_fim(
 
     # Continue until we hit max_seeds limit or budget is exhausted
     iteration = 0
-    max_iterations = max_seeds if max_seeds is not None else len(graph.nodes())
-
+    max_iterations = len(graph.nodes())
     progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
 
     while iteration < max_iterations:
@@ -122,14 +120,10 @@ def c_fim(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    random.seed(42)
-    np.random.seed(42)
-
     graph = nx.erdos_renyi_graph(
-        n=300,
+        n=100,
         p=0.05,
         directed=True,
-        seed=42,
     )
 
     # Assign communities randomly
@@ -139,7 +133,6 @@ if __name__ == '__main__':
     communities = set(nx.get_node_attributes(graph, 'community').values())
     costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}
 
-    max_seeds = 5  # Maximum number of seeds (upper bound)
     alpha = 0  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
     budget = 5.0  # Total budget available
@@ -147,7 +140,6 @@ if __name__ == '__main__':
     seeds = c_fim(
         graph=graph,
         communities=communities,
-        max_seeds=max_seeds,
         budget=budget,
         costs=costs,
         alpha=alpha,
@@ -165,3 +157,4 @@ if __name__ == '__main__':
         random_state=42,
     )
     print(f'Expected influenced fraction per community: {final_frac}')
+    print(f'Utility Gap: {utility_gap(final_frac)}')
