@@ -18,7 +18,7 @@ def modified_greedy(
         costs: dict[int, float],
         budget: float,
         probability: float = 0.5,
-        num_simulations: int = 100,
+        num_sims: int = 100,
 ) -> set[int]:
     """
     Select seed nodes using the Modified Greedy algorithm.
@@ -54,7 +54,7 @@ def modified_greedy(
                 graph=graph,
                 seeds=list(seed_set),
                 probability=probability,
-                num_simulations=num_simulations
+                num_simulations=num_sims
             )
         return influence_cache[seed_set]
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
         costs=costs,
         budget=5,
         probability=0.1,
-        num_simulations=1000,
+        num_sims=1000,
     )
     print(f'Final seeds: {seeds}')
 

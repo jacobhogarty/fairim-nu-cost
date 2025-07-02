@@ -2,69 +2,26 @@
 Helper file used to compute the Bergson-Samuelson isoelastic social welfare and Gini coefficient.
 """
 import numpy as np
-from math import log
 from numba import njit
 
 
-def bergson_samuelson_swf(
-        utilities,
-        alpha: float,
-        epsilon: float = 1e-10,
-):
+def bergson_samuelson_swf(utilities, sizes, alpha: float, epsilon: float = 1e-10):
     """
-    Compute the Bergson-Samuelson isoelastic social welfare.
+    Isoelastic social welfare function (community-weighted).
 
     Args:
-        utilities: Iterable of individual utility values (list, dict.values, etc.)
-        alpha: Inequality aversion parameter:
-            - alpha = 0: Logarithmic (Nash welfare)
-            - alpha < 1: Decreasing alpha increases inequality aversion
-            - alpha = 1: Utilitarian (sum of utilities)
-        epsilon: Small constant to avoid undefined values for zero utilities.
-            - Only used when alpha <= 0. Default is 1e-10
-
-    Returns:
-        float: The aggregated social welfare value
-
-    Raises:
-        ValueError: If any utility is negative
+        utilities: Dict of community -> utility (fraction influenced)
+        sizes: Dict of community -> population size
+        alpha: Inequality aversion parameter
+        epsilon: Small constant to avoid log(0)
     """
-    assert alpha <= 1, 'Alpha must be less or equal to 1.'
+    u = np.array([utilities[c] + epsilon for c in utilities])
+    n = np.array([sizes[c] for c in utilities])
 
-    @njit(cache=True)
-    def _swf_numba_accelerator(
-            utilities: np.ndarray,
-            alpha: float,
-            epsilon: float = 1e-10,
-    ) -> float:
-        """
-        Internal Numba-optimised computation function for the Bergson-Samuelson isoelastic social welfare.
-        """
-        n = len(utilities)
-        total = 0.0
-
-        if abs(alpha) < 1e-6:
-            for i in range(n):
-                clamped = max(epsilon, min(utilities[i], 1.0))
-                total += log(clamped)
-            return total
-
-        for i in range(n):
-            clamped = max(epsilon, min(utilities[i], 1.0))
-            total += (clamped ** alpha) / alpha
-
-        return total
-
-    utilities_array = np.asarray(list(utilities), dtype=np.float64)
-
-    if np.any(utilities_array < 0):
-        raise ValueError('All utilities must be non-negative.')
-
-    return _swf_numba_accelerator(
-        utilities=utilities_array,
-        alpha=alpha,
-        epsilon=epsilon,
-    )
+    if alpha == 0:
+        return np.sum(n * np.log(u))
+    else:
+        return np.sum(n * (u ** alpha) / alpha)
 
 
 @njit(cache=True)

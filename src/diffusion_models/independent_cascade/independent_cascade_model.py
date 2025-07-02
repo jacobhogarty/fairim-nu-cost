@@ -333,8 +333,8 @@ class IndependentCascadeModel:
             return {c: 0.0 for c in unique_communities}
 
         # Create community mapping
-        unique_communities = list(set(communities.values()))
-        community_to_idx = {community: idx for idx, community in enumerate(unique_communities)}
+        unique_communities = list(set(int(c) for c in communities.values()))
+        community_to_idx = {int(community): idx for idx, community in enumerate(unique_communities)}
         node_communities = np.zeros(self.num_nodes, dtype=np.int32)
 
         for node, community in communities.items():

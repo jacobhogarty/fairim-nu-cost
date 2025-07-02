@@ -45,7 +45,14 @@ def welfare_greedy(
         across communities.
     """
     seeds = set()
+    communities = set(nx.get_node_attributes(graph, 'community').values())
+    community_sizes = {
+        c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
+        for c in communities
+    }
+
     influenced_frac = {c: 0.0 for c in communities}
+
 
     # Continue until we hit k
     iteration = 0
@@ -56,7 +63,8 @@ def welfare_greedy(
     while iteration < max_iterations:
         best_gain, best_node = -float('inf'), None
         base_welfare = bergson_samuelson_swf(
-            utilities=influenced_frac.values(),
+            utilities=influenced_frac,
+            sizes=community_sizes,
             alpha=alpha,
         )
 
@@ -72,8 +80,10 @@ def welfare_greedy(
                 num_simulations=num_sims,
             )
 
+
             new_welfare = bergson_samuelson_swf(
-                utilities=list(sims_frac.values()),
+                utilities=sims_frac,
+                sizes=community_sizes,
                 alpha=alpha,
             )
 

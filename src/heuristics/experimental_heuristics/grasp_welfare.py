@@ -68,6 +68,12 @@ class WelfareGRASP(GRASP):
         Returns:
             Adjusted score and unadjusted welfare score
         """
+        communities = set(nx.get_node_attributes(graph, 'community').values())
+        community_sizes = {
+            c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
+            for c in communities
+        }
+
         frac = estimate_cascade_by_community(
             graph=self.graph,
             seeds=seed_set,
@@ -76,8 +82,9 @@ class WelfareGRASP(GRASP):
         )
 
         return bergson_samuelson_swf(
-            utilities=list(frac.values()),
-            alpha=self.alpha,
+            utilities=frac,
+            sizes=community_sizes,
+            alpha=alpha,
         )
 
     def _local_search(self, seed_set: set[int]) -> set[int]:

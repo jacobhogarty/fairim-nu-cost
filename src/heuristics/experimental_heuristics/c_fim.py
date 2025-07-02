@@ -15,7 +15,6 @@ from src.metrics import (
 
 def c_fim(
         graph: nx.Graph,
-        communities: set,
         alpha: float,
         costs: dict,
         budget: float,
@@ -44,6 +43,12 @@ def c_fim(
     """
     seed_set = set()
     current_cost = 0.0
+    communities = set(nx.get_node_attributes(graph, 'community').values())
+    community_sizes = {
+        c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
+        for c in communities
+    }
+
     influenced_frac = {c: 0.0 for c in communities}
 
     # Continue until we hit max_seeds limit or budget is exhausted
@@ -56,7 +61,8 @@ def c_fim(
         best_frac = None
 
         base_welfare = bergson_samuelson_swf(
-            utilities=influenced_frac.values(),
+            utilities=influenced_frac,
+            sizes=community_sizes,
             alpha=alpha,
         )
 
@@ -81,7 +87,8 @@ def c_fim(
             )
 
             gain = bergson_samuelson_swf(
-                utilities=list(sims_frac.values()),
+                utilities=sims_frac,
+                sizes=community_sizes,
                 alpha=alpha,
             ) - base_welfare
 
@@ -139,7 +146,6 @@ if __name__ == '__main__':
 
     seeds = c_fim(
         graph=graph,
-        communities=communities,
         budget=budget,
         costs=costs,
         alpha=alpha,

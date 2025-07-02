@@ -82,7 +82,6 @@ if __name__ == '__main__':
         directed=True,
     )
 
-    # Run Kempe greedy
     seeds = kempe_greedy(
         graph=graph,
         k=5,
