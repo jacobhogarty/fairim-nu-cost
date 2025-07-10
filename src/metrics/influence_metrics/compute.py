@@ -15,13 +15,14 @@ def bergson_samuelson_swf(utilities, sizes, alpha: float, epsilon: float = 1e-10
         alpha: Inequality aversion parameter
         epsilon: Small constant to avoid log(0)
     """
-    u = np.array([utilities[c] + epsilon for c in utilities])
-    n = np.array([sizes[c] for c in utilities])
+    communities = utilities.keys()
+    u = np.array([utilities[c] + epsilon for c in communities])
+    s = np.array([sizes[c] for c in communities])
 
     if alpha == 0:
-        return np.sum(n * np.log(u))
+        return np.sum(s * np.log(u))
     else:
-        return np.sum(n * (u ** alpha) / alpha)
+        return np.sum(s * (u ** alpha) / alpha)
 
 
 @njit(cache=True)

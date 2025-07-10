@@ -27,26 +27,14 @@ class WelfareGRASP(GRASP):
             self,
             graph: nx.Graph | nx.DiGraph,
             costs: dict[int, float],
-            budget: int,
+            budget: float,
             alpha: float = 0.5,
+            welfare: float = 0.0,
             propagation_rate: float = 0.1,
             max_iter: int = 50,
             max_evaluations: int = 500,
             num_sims: int = 1000,
     ) -> None:
-        """
-        Initialises the WelfareGRASP algorithm.
-
-        Args:
-            graph (nx.Graph | nx.DiGraph): Input graph.
-            costs (dict[int, float]): Cost per node for seed selection.
-            budget (int): Total cost budget.
-            alpha (float): Inequality aversion parameter.
-            propagation_rate (float): Probability of influence propagation.
-            max_iter (int): Number of GRASP iterations.
-            max_evaluations (int): Max evaluations in local search.
-            num_sims (int): Number of simulations to estimate influence.
-        """
         super().__init__(
             graph=graph,
             costs=costs,
@@ -57,6 +45,11 @@ class WelfareGRASP(GRASP):
             max_evaluations=max_evaluations,
             num_sims=num_sims,
         )
+        self.welfare = welfare
+        self.community_sizes = {
+            c: sum(1 for _, d in graph.nodes(data=True) if d.get('community') == c)
+            for c in set(nx.get_node_attributes(graph, 'community').values())
+        }
 
     def _evaluate_seed_set(self, seed_set: set[int]) -> float:
         """
@@ -68,12 +61,6 @@ class WelfareGRASP(GRASP):
         Returns:
             Adjusted score and unadjusted welfare score
         """
-        communities = set(nx.get_node_attributes(graph, 'community').values())
-        community_sizes = {
-            c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
-            for c in communities
-        }
-
         frac = estimate_cascade_by_community(
             graph=self.graph,
             seeds=seed_set,
@@ -83,8 +70,8 @@ class WelfareGRASP(GRASP):
 
         return bergson_samuelson_swf(
             utilities=frac,
-            sizes=community_sizes,
-            alpha=alpha,
+            sizes=self.community_sizes,
+            alpha=self.welfare,
         )
 
     def _local_search(self, seed_set: set[int]) -> set[int]:
@@ -168,11 +155,11 @@ class WelfareGRASP(GRASP):
 # Example Usage
 # ----------------------------
 if __name__ == "__main__":
-    graph = nx.erdos_renyi_graph(
-        n=1000,
-        p=0.05,
-        directed=True,
+    graph = nx.barabasi_albert_graph(
+        n=100,
+        m=3,
     )
+    graph.to_directed()
 
     # Assign communities randomly
     for i, node in enumerate(graph.nodes()):
@@ -181,15 +168,16 @@ if __name__ == "__main__":
     communities = set(nx.get_node_attributes(graph, 'community').values())
     costs = {node: random.uniform(0.1, 100.0) for node in graph.nodes()}
 
-    alpha = 0  # Inequality-aversion parameter
+    alpha = -9  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
     budget = 50  # Total budget available
 
     grasp = WelfareGRASP(
         graph=graph,
         costs=costs,
+        welfare=alpha,
         budget=budget,
-        alpha=1,
+        alpha=0.5,
     )
     seeds = grasp.solve()
 

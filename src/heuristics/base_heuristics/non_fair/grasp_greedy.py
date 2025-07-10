@@ -19,7 +19,7 @@ class GRASP:
             self,
             graph: nx.Graph | nx.DiGraph,
             costs: dict[int, float],
-            budget: int,
+            budget: float,
             alpha: float = 0.5,
             propagation_rate: float = 0.1,
             max_iter: int = 50,

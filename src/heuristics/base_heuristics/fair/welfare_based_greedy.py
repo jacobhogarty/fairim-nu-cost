@@ -104,7 +104,7 @@ def welfare_greedy(
         progress_bar.set_postfix(
             {
                 'seeds': len(seeds),
-                'influenced': str({k: round(v, 2) for k, v in influenced_frac.items()}),
+                'welfare': f'{best_gain:.4f}',
             }
         )
 

@@ -15,4 +15,9 @@ def utility_gap(influence_dict: dict) -> float:
     """
     if not influence_dict:
         return 0.0
-    return (max(influence_dict.values()) - min(influence_dict.values()) / sum(influence_dict.values())) * 100
+
+    total_influence = sum(influence_dict.values())
+    if total_influence == 0:
+        return 0.0
+
+    return (max(influence_dict.values()) - min(influence_dict.values())) / total_influence * 100
