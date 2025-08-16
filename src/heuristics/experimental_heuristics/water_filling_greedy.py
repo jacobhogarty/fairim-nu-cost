@@ -4,6 +4,7 @@ a number of plants (communities) plants needing to watered (cost) subject to the
 
 Combines the cost-aware selection from Tang et al. with the welfare maximisation from Rahmattalabi et al.
 """
+import heapq
 import random
 import networkx as nx
 
@@ -14,6 +15,7 @@ from src.metrics import (
     bergson_samuelson_swf,
     utility_gap,
 )
+from src.utils import CELFNode
 
 
 def water_filling_greedy(
@@ -30,7 +32,7 @@ def water_filling_greedy(
     watering can (budget).
 
     Combines the cost-aware selection strategy from the Modified Greedy algorithm with
-    the welfare-based objective function from Rahmattalabi et al.
+    the welfare-based objective function from Rahmattalabi et al. using CELF++ optimisation.
 
     The algorithm:
         1. Greedily selects nodes based on marginal welfare gain per cost
@@ -51,16 +53,15 @@ def water_filling_greedy(
         A set of selected nodes that maximise social welfare within budget constraints
     """
     selected = set()
-    candidates = set(graph.nodes)
+    budget_used = 0.0
+    iteration = 0
 
-    # Pre-compute community information (constant throughout)
     communities = set(nx.get_node_attributes(graph, 'community').values())
     community_sizes = {
-        c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
+        c: sum(1 for _, d in graph.nodes(data=True) if d.get('community') == c)
         for c in communities
     }
 
-    # Cache for welfare and influence calculations
     welfare_cache = {}
     influence_cache = {}
 
@@ -69,7 +70,7 @@ def water_filling_greedy(
         Get influence fractions with caching
         """
         if seed_set not in influence_cache:
-            if not seed_set:  # Empty set case
+            if not seed_set:
                 influence_cache[seed_set] = {c: 0.0 for c in communities}
             else:
                 influence_cache[seed_set] = estimate_cascade_by_community(
@@ -93,9 +94,9 @@ def water_filling_greedy(
             )
         return welfare_cache[seed_set]
 
-    def marginal_welfare_gain(seed_set: set[int], node: int) -> float:
+    def compute_marginal_welfare_gain(seed_set: set[int], node: int) -> float:
         """
-        Compute the isoelastic social welfare gain per unit cost for adding a node.
+        Compute the isoelastic social welfare gain for adding a node.
         """
         if node in seed_set:
             return 0.0  # Already selected
@@ -103,43 +104,73 @@ def water_filling_greedy(
         current_set = frozenset(seed_set)
         new_set = frozenset(seed_set | {node})
 
-        # Compute change in welfare using isoelastic social welfare function
         delta_welfare = get_welfare(new_set) - get_welfare(current_set)
+        return delta_welfare
 
-        return delta_welfare / costs[node] if costs[node] > 0 else 0.0
+    priority_queue = []
 
     single_node_welfare = {}
     affordable_nodes = [n for n in graph.nodes if costs[n] <= budget]
 
-    for node in affordable_nodes:
-        single_node_welfare[node] = get_welfare(frozenset([node]))
+    initial_progress = tqdm(graph.nodes, desc='Initial Computation')
 
-    max_iterations = len(candidates)
-    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+    for node in initial_progress:
+        if costs[node] <= budget:
+            marginal_gain = compute_marginal_welfare_gain(selected, node)
+            marginal_gain_per_cost = marginal_gain / costs[node] if costs[node] > 0 else 0.0
 
-    # Greedy selection phase
-    budget_used = 0.0
+            celf_node = CELFNode(
+                node_id=node,
+                marginal_gain=marginal_gain,
+                cost=costs[node],
+                marginal_gain_per_cost=marginal_gain_per_cost,
+                iteration_updated=0,
+            )
 
-    while candidates:
-        # Only consider nodes that fit within the budget
-        feasible_candidates = [
-            node for node in candidates
-            if budget_used + costs[node] <= budget
-        ]
+            heapq.heappush(priority_queue, celf_node)
+            single_node_welfare[node] = get_welfare(frozenset([node]))
 
-        if not feasible_candidates:
-            progress_bar.update(len(candidates))
-            break  # No more nodes can fit within budget
+    initial_progress.close()
 
-        # Select node with the highest marginal welfare gain per cost
-        best_node = max(
-            feasible_candidates,
-            key=lambda node: marginal_welfare_gain(selected, node) if costs[node] > 0 else float('inf')
-        )
+    max_iterations = len(priority_queue)
+    progress_bar = tqdm(desc='Seed Selection', total=max_iterations)
 
-        candidates.remove(best_node)
-        selected.add(best_node)
-        budget_used += costs[best_node]
+    while priority_queue and budget_used < budget:
+        iteration += 1
+
+        current_best = heapq.heappop(priority_queue)
+
+        if budget_used + current_best.cost > budget:
+            progress_bar.update(1)
+            continue
+
+        if current_best.iteration_updated < iteration - 1:
+            new_marginal_gain = compute_marginal_welfare_gain(selected, current_best.node_id)
+            new_marginal_gain_per_cost = new_marginal_gain / current_best.cost if current_best.cost > 0 else 0.0
+
+            updated_node = CELFNode(
+                node_id=current_best.node_id,
+                marginal_gain=new_marginal_gain,
+                cost=current_best.cost,
+                marginal_gain_per_cost=new_marginal_gain_per_cost,
+                iteration_updated=iteration,
+            )
+
+            heapq.heappush(priority_queue, updated_node)
+            continue
+
+        if priority_queue:
+            next_best = priority_queue[0]
+
+            if (
+                    next_best.iteration_updated < iteration - 1 and
+                    next_best.marginal_gain_per_cost > current_best.marginal_gain_per_cost
+            ):
+                heapq.heappush(priority_queue, current_best)
+                continue
+
+        selected.add(current_best.node_id)
+        budget_used += current_best.cost
 
         progress_bar.update(1)
         progress_bar.set_postfix(
@@ -147,6 +178,7 @@ def water_filling_greedy(
                 'seeds': len(selected),
                 'welfare': f'{get_welfare(frozenset(selected)):.4f}',
                 'budget_used': f'{budget_used:.2f}/{budget:.2f}',
+                'queue_size': len(priority_queue),
             }
         )
 
@@ -157,8 +189,7 @@ def water_filling_greedy(
 
     best_singleton = max(affordable_nodes, key=lambda n: single_node_welfare[n])
     best_singleton_welfare = single_node_welfare[best_singleton]
-
-    selected_welfare = get_welfare(frozenset(selected))
+    selected_welfare = get_welfare(frozenset(selected)) if selected else 0.0
 
     return (
         selected if selected_welfare >= best_singleton_welfare
@@ -170,24 +201,45 @@ def water_filling_greedy(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    # Create a test graph
-    graph = nx.barabasi_albert_graph(
-        n=200,
-        m=3,
+    n = 1000  # Number of nodes
+    tau1 = 2.5  # Power-law exponent for degree distribution
+    tau2 = 1.5  # Power-law exponent for community size distribution
+    mu = 0.3  # Mixing parameter (fraction of edges between communities)
+    min_degree = 10  # Minimum degree
+    max_degree = 50  # Maximum degree
+    min_community = 20  # Minimum community size
+    max_community = 100  # Maximum community size
+    seed = 42
+    graph = nx.generators.community.LFR_benchmark_graph(
+        n=n,
+        tau1=tau1,
+        tau2=tau2,
+        mu=mu,
+        min_degree=min_degree,
+        max_degree=max_degree,
+        min_community=min_community,
+        max_community=max_community,
+        seed=seed
     )
+    graph = graph.to_directed()
 
-    # Assign communities randomly
-    for i, node in enumerate(graph.nodes()):
-        graph.nodes[node]['community'] = random.randint(0, 2)
+    community_labels = {}
+    for node, communities in graph.nodes(data="community"):
+        community_labels[node] = list(communities)[0]
 
-    communities = set(nx.get_node_attributes(graph, 'community').values())
+    unique_ids = sorted(set(community_labels.values()))
+    id_map = {old_id: new_id for new_id, old_id in enumerate(unique_ids)}
+    relabeled_community_labels = {node: id_map[cid] for node, cid in community_labels.items()}
+
+    # Apply relabeled community attributes to the graph
+    nx.set_node_attributes(graph, relabeled_community_labels, "community")
+
     costs = {node: random.uniform(0.1, 25.0) for node in graph.nodes()}
 
-    # Parameters
     budget = 100.0
-    alpha = 0.9  # inequality aversion parameter
+    alpha = -3
     probability = 0.25
-    num_sims = 500
+    num_sims = 1000
 
     seeds = water_filling_greedy(
         graph=graph,
@@ -201,7 +253,6 @@ if __name__ == '__main__':
     print(f'Final seeds: {seeds}')
     print(f'Total cost: {sum(costs[node] for node in seeds):.2f}')
 
-    # Evaluate final performance
     final_frac = estimate_cascade_by_community(
         graph=graph,
         seeds=seeds,

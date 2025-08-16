@@ -16,7 +16,6 @@ from src.metrics import (
 
 def welfare_greedy(
         graph: nx.Graph,
-        communities: set,
         k: int,
         alpha: float,
         probability: float = 0.1,
@@ -32,7 +31,6 @@ def welfare_greedy(
 
     Args:
         graph: The input network graph where nodes represent individuals.
-        communities: A set of community identifiers present in the graph.
         k: Number of seed nodes to select.
         alpha: Inequality aversion parameter for the isoelastic welfare function.
         probability: Probability of influence transmission on each edge during the Independent Cascade process.
@@ -133,7 +131,6 @@ if __name__ == '__main__':
 
     seeds = welfare_greedy(
         graph=graph,
-        communities=communities,
         k=k,
         alpha=alpha,
         probability=p,

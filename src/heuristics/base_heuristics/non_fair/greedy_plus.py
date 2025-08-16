@@ -1,16 +1,14 @@
-"""
-Implementation of the Greedy+ Heuristic by Feldman et al.
-"""
 import random
 import networkx as nx
+import heapq
 
 from tqdm import tqdm
 
-from src.diffusion_models import (
-    estimate_cascade_influence,
-    estimate_cascade_by_community,
+from src.diffusion_models import estimate_cascade_influence, estimate_cascade_by_community
+from src.metrics import (
+    utility_gap,
 )
-from src.metrics import utility_gap
+from src.utils import CELFNode
 
 
 def greedy_plus(
@@ -45,6 +43,8 @@ def greedy_plus(
         A set of selected nodes with high influence
     """
     selected = set()
+    budget_used = 0.0
+    iteration = 0
     history = [set()]
 
     # Cache for influence calculations
@@ -63,7 +63,7 @@ def greedy_plus(
             )
         return influence_cache[seed_set]
 
-    def marginal_gain(seed_set: set[int], node: int) -> float:
+    def compute_marginal_gain(seed_set: set[int], node: int) -> float:
         """
         Calculate marginal gain of adding a node to seed set
         """
@@ -71,52 +71,111 @@ def greedy_plus(
         new_set = frozenset(seed_set | {node})
         return get_influence(seed_set=new_set) - get_influence(seed_set=current_set)
 
-    while True:
-        feasible = [
-            v for v in graph.nodes
-            if v not in selected and sum(costs[i] for i in selected) + costs[v] <= budget
-        ]
-        if not feasible:
-            break
+    priority_queue = []
 
-        best_node = max(
-            feasible,
-            key=lambda unselected: marginal_gain(seed_set=selected, node=unselected) / costs[unselected]
-            if costs[unselected] > 0 else float('inf')
-        )
-        selected.add(best_node)
+    initial_progress = tqdm(graph.nodes, desc='Initial Computation')
+
+    for node in initial_progress:
+        if costs[node] <= budget:
+            single_node_set = frozenset([node])
+            marginal_gain = get_influence(single_node_set)
+            marginal_gain_per_cost = marginal_gain / costs[node] if costs[node] > 0 else 0.0
+
+            celf_node = CELFNode(
+                node_id=node,
+                marginal_gain=marginal_gain,
+                cost=costs[node],
+                marginal_gain_per_cost=marginal_gain_per_cost,
+                iteration_updated=0,
+            )
+
+            heapq.heappush(priority_queue, celf_node)
+
+    initial_progress.close()
+
+    greedy_progress = tqdm(desc='Seed Selection')
+
+    while priority_queue and budget_used < budget:
+        iteration += 1
+
+        current_best = heapq.heappop(priority_queue)
+
+        if budget_used + current_best.cost > budget:
+            continue
+
+        if current_best.iteration_updated < iteration - 1:
+            new_marginal_gain = compute_marginal_gain(selected, current_best.node_id)
+            new_marginal_gain_per_cost = new_marginal_gain / current_best.cost if current_best.cost > 0 else 0.0
+
+            updated_node = CELFNode(
+                node_id=current_best.node_id,
+                marginal_gain=new_marginal_gain,
+                cost=current_best.cost,
+                marginal_gain_per_cost=new_marginal_gain_per_cost,
+                iteration_updated=iteration,
+            )
+
+            heapq.heappush(priority_queue, updated_node)
+            continue
+
+        if priority_queue:
+            next_best = priority_queue[0]
+
+            if (
+                    next_best.iteration_updated < iteration - 1 and
+                    next_best.marginal_gain_per_cost > current_best.marginal_gain_per_cost
+            ):
+                heapq.heappush(priority_queue, current_best)
+                continue
+
+        selected.add(current_best.node_id)
+        budget_used += current_best.cost
         history.append(set(selected))
 
-    best_result = set(selected)
-    best_influence = get_influence(frozenset(selected))
+        greedy_progress.update(1)
+        greedy_progress.set_postfix(
+            {
+                'seeds': len(selected),
+                'welfare': f'{get_influence(frozenset(selected)):.4f}',
+                'budget_used': f'{budget_used:.2f}/{budget:.2f}',
+                'queue_size': len(priority_queue),
+            }
+        )
 
-    progress_bar = tqdm(total=len(history), desc="Selecting Seeds")
+    greedy_progress.close()
+
+    best_result = set(selected)
+    best_welfare = get_influence(frozenset(selected)) if selected else 0.0
+
+    enhancement_progress = tqdm(total=len(history), desc='Greedy+ Enhancement')
 
     for partial in history:
+        partial_cost = sum(costs[i] for i in partial)
+
         for node in graph.nodes:
             if node in partial:
                 continue
 
-            partial_cost = sum(costs[i] for i in partial)
             total_cost = partial_cost + costs[node]
             if total_cost <= budget:
                 candidate_set = frozenset(partial | {node})
-                candidate_influence = get_influence(seed_set=candidate_set)
+                candidate_welfare = get_influence(candidate_set)
 
-                if candidate_influence > best_influence:
+                if candidate_welfare > best_welfare:
                     best_result = partial | {node}
-                    best_influence = candidate_influence
+                    best_welfare = candidate_welfare
 
-        progress_bar.update(1)
-        progress_bar.set_postfix(
+        enhancement_progress.update(1)
+        enhancement_progress.set_postfix(
             {
+                'prefix_size': len(partial),
                 'best_seeds': len(best_result),
-                'best_influence': f'{best_influence:.2f}',
+                'best_welfare': f'{best_welfare:.4f}',
                 'budget_used': f'{sum(costs[node] for node in best_result):.2f}/{budget:.2f}'
             }
         )
 
-    progress_bar.close()
+    enhancement_progress.close()
 
     return best_result
 
@@ -126,7 +185,7 @@ def greedy_plus(
 # ----------------------------
 if __name__ == '__main__':
     graph = nx.erdos_renyi_graph(
-        n=100,
+        n=500,
         p=0.05,
         directed=True,
     )

@@ -1,9 +1,10 @@
 """
-Implementation of the Greedy+1 Heuristic by Feldman et al. with Isoelastic Social Welfare Function named Marginal
-Packing.
+Implementation of the Greedy+ Heuristic by Yaroslavtsev et al. and Feldman et al. with Isoelastic Social Welfare
+Function named Marginal Packing, enhanced with CELF++ optimisations.
 """
 import random
 import networkx as nx
+import heapq
 
 from tqdm import tqdm
 
@@ -12,6 +13,7 @@ from src.metrics import (
     bergson_samuelson_swf,
     utility_gap,
 )
+from src.utils import CELFNode
 
 
 def marginal_packing(
@@ -23,10 +25,8 @@ def marginal_packing(
         num_sims: int = 200,
 ) -> set[int]:
     """
-    Selects seed nodes using the Greedy+1 algorithm from Feldman et al. using Isoelastic Welfare Function
-
-    This algorithm is an extension of the standard greedy approach. After running a greedy selection,
-    it attempts to improve the result by considering one additional element beyond the greedy solution.
+    Selects seed nodes using the Greedy+ algorithm with Isoelastic Welfare Function
+    enhanced with CELF++ optimizations for improved performance.
 
     Algorithm steps:
         1. Enumerate each single element that can be added to the solution.
@@ -48,6 +48,8 @@ def marginal_packing(
         A set of selected nodes with high influence
     """
     selected = set()
+    budget_used = 0.0
+    iteration = 0
     history = [set()]
 
     # Cache for influence calculations
@@ -90,9 +92,9 @@ def marginal_packing(
             )
         return welfare_cache[seed_set]
 
-    def marginal_gain(seed_set: set[int], node: int) -> float:
+    def compute_marginal_welfare_gain(seed_set: set[int], node: int) -> float:
         """
-        Compute the isoelastic social welfare gain per unit cost for adding a node.
+        Compute the isoelastic social welfare gain for adding a node.
         """
         if node in seed_set:
             return 0.0  # Already selected
@@ -100,38 +102,94 @@ def marginal_packing(
         current_set = frozenset(seed_set)
         new_set = frozenset(seed_set | {node})
 
-        # Compute change in welfare using isoelastic social welfare function
         delta_welfare = get_welfare(new_set) - get_welfare(current_set)
+        return delta_welfare
 
-        return delta_welfare / costs[node] if costs[node] > 0 else 0.0
+    priority_queue = []
 
-    while True:
-        feasible = [
-            v for v in graph.nodes
-            if v not in selected and sum(costs[i] for i in selected) + costs[v] <= budget
-        ]
-        if not feasible:
-            break
+    initial_progress = tqdm(graph.nodes, desc='Initial Computation')
 
-        # Select best candidate by marginal gain in isoelastic welfare
-        best_node = max(
-            feasible,
-            key=lambda v: marginal_gain(seed_set=selected, node=v)
-        )
-        selected.add(best_node)
+    for node in initial_progress:
+        if costs[node] <= budget:
+            single_node_set = frozenset([node])
+            marginal_gain = get_welfare(single_node_set)
+            marginal_gain_per_cost = marginal_gain / costs[node] if costs[node] > 0 else 0.0
+
+            celf_node = CELFNode(
+                node_id=node,
+                marginal_gain=marginal_gain,
+                cost=costs[node],
+                marginal_gain_per_cost=marginal_gain_per_cost,
+                iteration_updated=0,
+            )
+
+            heapq.heappush(priority_queue, celf_node)
+
+    initial_progress.close()
+
+    greedy_progress = tqdm(desc='Seed Selection')
+
+    while priority_queue and budget_used < budget:
+        iteration += 1
+
+        current_best = heapq.heappop(priority_queue)
+
+        if budget_used + current_best.cost > budget:
+            continue
+
+        if current_best.iteration_updated < iteration - 1:
+            new_marginal_gain = compute_marginal_welfare_gain(selected, current_best.node_id)
+            new_marginal_gain_per_cost = new_marginal_gain / current_best.cost if current_best.cost > 0 else 0.0
+
+            updated_node = CELFNode(
+                node_id=current_best.node_id,
+                marginal_gain=new_marginal_gain,
+                cost=current_best.cost,
+                marginal_gain_per_cost=new_marginal_gain_per_cost,
+                iteration_updated=iteration,
+            )
+
+            heapq.heappush(priority_queue, updated_node)
+            continue
+
+        if priority_queue:
+            next_best = priority_queue[0]
+
+            if (
+                    next_best.iteration_updated < iteration - 1 and
+                    next_best.marginal_gain_per_cost > current_best.marginal_gain_per_cost
+            ):
+                heapq.heappush(priority_queue, current_best)
+                continue
+
+        selected.add(current_best.node_id)
+        budget_used += current_best.cost
         history.append(set(selected))
 
-    best_result = set(selected)
-    best_welfare = get_welfare(frozenset(selected))
+        greedy_progress.update(1)
+        greedy_progress.set_postfix(
+            {
+                'seeds': len(selected),
+                'welfare': f'{get_welfare(frozenset(selected)):.4f}',
+                'budget_used': f'{budget_used:.2f}/{budget:.2f}',
+                'queue_size': len(priority_queue),
+            }
+        )
 
-    progress_bar = tqdm(total=len(history), desc='Selecting Seeds')
+    greedy_progress.close()
+
+    best_result = set(selected)
+    best_welfare = get_welfare(frozenset(selected)) if selected else 0.0
+
+    enhancement_progress = tqdm(total=len(history), desc='Greedy+ Enhancement')
 
     for partial in history:
+        partial_cost = sum(costs[i] for i in partial)
+
         for node in graph.nodes:
             if node in partial:
                 continue
 
-            partial_cost = sum(costs[i] for i in partial)
             total_cost = partial_cost + costs[node]
             if total_cost <= budget:
                 candidate_set = frozenset(partial | {node})
@@ -141,16 +199,17 @@ def marginal_packing(
                     best_result = partial | {node}
                     best_welfare = candidate_welfare
 
-        progress_bar.update(1)
-        progress_bar.set_postfix(
+        enhancement_progress.update(1)
+        enhancement_progress.set_postfix(
             {
-                'seeds': len(best_result),
-                'welfare': f'{best_welfare:.4f}',
+                'prefix_size': len(partial),
+                'best_seeds': len(best_result),
+                'best_welfare': f'{best_welfare:.4f}',
                 'budget_used': f'{sum(costs[node] for node in best_result):.2f}/{budget:.2f}'
             }
         )
 
-    progress_bar.close()
+    enhancement_progress.close()
 
     return best_result
 
@@ -159,10 +218,9 @@ def marginal_packing(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    graph = nx.erdos_renyi_graph(
-        n=100,
-        p=0.05,
-        directed=True,
+    graph = nx.barabasi_albert_graph(
+        n=1000,
+        m=3,
     )
 
     # Assign communities randomly
@@ -175,11 +233,12 @@ if __name__ == '__main__':
         graph=graph,
         costs=costs,
         budget=5,
-        alpha=-9,
+        alpha=0.9,
         probability=0.1,
         num_sims=1000,
     )
     print(f'Final seeds: {seeds}')
+    print(f'Total cost: {sum(costs[node] for node in seeds):.2f}')
 
     final_frac = estimate_cascade_by_community(
         graph=graph,
@@ -189,4 +248,4 @@ if __name__ == '__main__':
         random_state=42,
     )
     print(f'Expected influenced fraction per community: {final_frac}')
-    print(f'Utility Gap: {utility_gap(final_frac)}')
+    print(f'Utility Gap: {utility_gap(final_frac):.4f}')

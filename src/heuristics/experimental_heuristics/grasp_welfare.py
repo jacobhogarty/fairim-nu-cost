@@ -6,19 +6,17 @@ fairness adjustment based on the Gini coefficient.It repeatedly constructs candi
 local search, and evaluates them via information diffusion simulations.
 """
 import random
-
 import networkx as nx
 from tqdm import tqdm
 
 from src.diffusion_models import estimate_cascade_by_community
-from src.heuristics import GRASP
 from src.metrics import (
     bergson_samuelson_swf,
     utility_gap,
 )
 
 
-class WelfareGRASP(GRASP):
+class WelfareGRASP:
     """
     An extension of the GRASP algorithm to maximise social welfare with fairness adjustments.
     """
@@ -35,39 +33,78 @@ class WelfareGRASP(GRASP):
             max_evaluations: int = 500,
             num_sims: int = 1000,
     ) -> None:
-        super().__init__(
-            graph=graph,
-            costs=costs,
-            budget=budget,
-            alpha=alpha,
-            propagation_rate=propagation_rate,
-            max_iter=max_iter,
-            max_evaluations=max_evaluations,
-            num_sims=num_sims,
-        )
+        self.graph = graph
+        self.costs = costs
+        self.budget = budget
+        self.alpha = alpha
         self.welfare = welfare
+        self.propagation_rate = propagation_rate
+        self.max_iter = max_iter
+        self.max_evaluations = max_evaluations
+        self.num_sims = num_sims
+
         self.community_sizes = {
             c: sum(1 for _, d in graph.nodes(data=True) if d.get('community') == c)
             for c in set(nx.get_node_attributes(graph, 'community').values())
         }
 
+        if self.graph.is_directed():
+            self.node_degrees = dict(self.graph.out_degree())
+        else:
+            self.node_degrees = dict(self.graph.degree())
+
+    def _g_deg(self, node: int) -> float:
+        """
+        g_deg: degree-based heuristic (|N^+(v)| for directed, degree for undirected).
+        """
+        return float(self.node_degrees[node])
+
+    def _construct_solution(self) -> set[int]:
+        """
+        Constructs an initial seed set using a greedy randomised approach - optimized version.
+        """
+        seed_set = set()
+        remaining_budget = self.budget
+        nodes = list(self.graph.nodes())
+        random.shuffle(nodes)
+
+        if not nodes:
+            return seed_set
+
+        random_node = random.choice(nodes)
+        if self.costs[random_node] <= remaining_budget:
+            seed_set.add(random_node)
+            remaining_budget -= self.costs[random_node]
+
+        while remaining_budget > 0:
+            candidate_list = [
+                node for node in self.graph.nodes()
+                if node not in seed_set and self.costs[node] <= remaining_budget
+            ]
+            if not candidate_list:
+                break
+
+            g_values = {node: self._g_deg(node) for node in candidate_list}
+            g_min, g_max = min(g_values.values()), max(g_values.values())
+            threshold = g_max - self.alpha * (g_max - g_min)
+            restricted_candidate_list = [node for node in candidate_list if g_values[node] >= threshold]
+
+            if not restricted_candidate_list:
+                break
+
+            random_node = random.choice(restricted_candidate_list)
+            seed_set.add(random_node)
+            remaining_budget -= self.costs[random_node]
+
+        return seed_set
+
     def _evaluate_seed_set(self, seed_set: set[int]) -> float:
-        """
-        Evaluate a seed set based on adjusted welfare and fairness.
-
-        Args:
-            seed_set: Set of seed node IDs
-
-        Returns:
-            Adjusted score and unadjusted welfare score
-        """
         frac = estimate_cascade_by_community(
             graph=self.graph,
             seeds=seed_set,
             probability=self.propagation_rate,
-            num_simulations=self.num_sims,
+            num_simulations=self.num_sims // 10,
         )
-
         return bergson_samuelson_swf(
             utilities=frac,
             sizes=self.community_sizes,
@@ -76,40 +113,58 @@ class WelfareGRASP(GRASP):
 
     def _local_search(self, seed_set: set[int]) -> set[int]:
         """
-        Perform local search to improve the seed set
-
-        Args:
-            seed_set: Initial seed set
-
-        Returns:
-            Locally optimised seed set
+        Perform local search to improve the seed set - optimized version.
         """
-        best_score = self._evaluate_seed_set(seed_set)
+        best_score = float('-inf')
         evaluations = 0
         improved = True
 
+        # Pre-compute candidate lists to avoid repeated computation
+        all_nodes = list(self.graph.nodes())
+
         while improved and evaluations < self.max_evaluations:
             improved = False
-            for out_node in list(seed_set):
+            nodes = list(seed_set)
+            random.shuffle(nodes)
+
+            for random_node in nodes:
                 if evaluations >= self.max_evaluations:
                     break
 
-                for in_node in random.sample(
-                        [v for v in self.graph.nodes() if v not in seed_set],
-                        k=min(10, len(self.graph.nodes()) - len(seed_set))
-                ):
-                    new_seed = (seed_set - {out_node}) | {in_node}
-                    total_cost = sum(self.costs[n] for n in new_seed)
-                    if total_cost > self.budget:
-                        continue
+                # Current budget if we remove this node
+                available_budget = self.budget - sum(self.costs[n] for n in seed_set - {random_node})
 
-                    evaluations += 1
-                    score = self._evaluate_seed_set(new_seed)
-                    if score > best_score:
-                        seed_set = new_seed
-                        best_score = score
-                        improved = True
+                # Find candidates that fit in the available budget
+                candidate_list = [
+                    v for v in all_nodes
+                    if v not in seed_set and self.costs[v] <= available_budget
+                ]
+
+                if not candidate_list:
+                    continue
+
+                # Compute degree discount values for candidates
+                temp_seed_set = seed_set - {random_node}
+                g_values = {node: self._g_deg(node) for node in candidate_list}
+                sorted_candidates = sorted(candidate_list, key=lambda x: g_values[x], reverse=True)
+
+                # Try top candidates
+                for node in sorted_candidates[:min(20, len(sorted_candidates))]:  # Limit candidates to check
+                    if evaluations >= self.max_evaluations:
                         break
+
+                    new_seed = temp_seed_set | {node}
+                    total_cost = sum(self.costs[n] for n in new_seed)
+
+                    if total_cost <= self.budget:
+                        evaluations += 1
+                        score = self._evaluate_seed_set(new_seed)
+                        if score > best_score:
+                            seed_set = new_seed
+                            best_score = score
+                            improved = True
+                            break
+
                 if improved:
                     break
 
@@ -124,20 +179,16 @@ class WelfareGRASP(GRASP):
         """
         best_seed_set = set()
         best_score = -float('inf')
-
         iteration = 0
         progress_bar = tqdm(desc='Selecting seeds', total=self.max_iter)
 
         while iteration < self.max_iter:
             seed_set = self._construct_solution()
             seed_set = self._local_search(seed_set=seed_set)
-
             score = self._evaluate_seed_set(seed_set)
-
             if score > best_score:
                 best_seed_set = seed_set
                 best_score = score
-
             iteration += 1
             progress_bar.update(1)
             progress_bar.set_postfix(
@@ -146,7 +197,6 @@ class WelfareGRASP(GRASP):
                     'cost': sum(self.costs[n] for n in best_seed_set),
                 }
             )
-
         progress_bar.close()
         return best_seed_set
 
@@ -156,18 +206,16 @@ class WelfareGRASP(GRASP):
 # ----------------------------
 if __name__ == "__main__":
     graph = nx.barabasi_albert_graph(
-        n=100,
+        n=1000,
         m=3,
     )
-    graph.to_directed()
+    graph = graph.to_directed()
 
     # Assign communities randomly
-    for i, node in enumerate(graph.nodes()):
+    for node in graph.nodes():
         graph.nodes[node]['community'] = random.randint(0, 2)
 
-    communities = set(nx.get_node_attributes(graph, 'community').values())
-    costs = {node: random.uniform(0.1, 100.0) for node in graph.nodes()}
-
+    costs = {node: random.uniform(0.1, 25.0) for node in graph.nodes()}
     alpha = -9  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
     budget = 50  # Total budget available
@@ -178,6 +226,7 @@ if __name__ == "__main__":
         welfare=alpha,
         budget=budget,
         alpha=0.5,
+        num_sims=1000,
     )
     seeds = grasp.solve()
 

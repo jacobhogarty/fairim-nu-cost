@@ -3,6 +3,7 @@ Implementation of the GRASP algorithm by Lozano‑Osorio et al. in 2024.
 """
 import random
 
+import numpy as np
 import networkx as nx
 
 from tqdm import tqdm
@@ -105,7 +106,7 @@ class GRASP:
         best_spread = estimate_cascade_influence(
             graph=self.graph,
             seeds=seed_set,
-            num_simulations=self.num_sims,
+            num_simulations=self.num_sims // 10,
             probability=self.propagation_rate,
         )
         evaluations = 0
@@ -124,12 +125,14 @@ class GRASP:
                     v for v in self.graph.nodes()
                     if v not in seed_set and self.costs[v] <= (self.budget + self.costs[random_node])
                 ]
-                if not candidate_list:
-                    continue
 
-                candidates = random.sample(candidate_list, min(10, len(candidate_list)))
+                g_values = {node: self._g_dist(node, seed_set - {random_node}) for node in candidate_list}
+                sorted_candidates = sorted(g_values, key=g_values.get, reverse=True)
 
-                for node in candidates:
+                for node in sorted_candidates:
+                    if evaluations >= self.max_evaluations:
+                        break
+
                     new_seed = (seed_set - {random_node}) | {node}
                     total_cost = sum(self.costs[n] for n in new_seed)
 
@@ -138,10 +141,9 @@ class GRASP:
                         spread = estimate_cascade_influence(
                             graph=self.graph,
                             seeds=new_seed,
-                            num_simulations=self.num_sims,
+                            num_simulations=self.num_sims // 10,
                             probability=self.propagation_rate,
                         )
-
                         if spread > best_spread:
                             seed_set = new_seed
                             best_spread = spread
@@ -211,12 +213,21 @@ if __name__ == "__main__":
     for i, node in enumerate(graph.nodes()):
         graph.nodes[node]['community'] = random.randint(0, 2)
 
-    costs = {node: random.uniform(1.0, 5.0) for node in graph.nodes()}
+    # Set node costs based on degree
+    costs = {}
+
+    deg_avg = np.mean([graph.degree(node) for node in graph.nodes()])
+    epsilon = 1e-6
+
+    for node in graph.nodes():
+        cost = max(epsilon, graph.degree(node) / deg_avg)
+        costs[node] = float(cost)
+        graph.nodes[node]['node_costs'] = float(cost)
 
     budget = 25
     alpha = 0
     p = 0.1
-    num_sims = 1000
+    num_sims = 100
     max_iter = 50
 
     grasp_solver = GRASP(

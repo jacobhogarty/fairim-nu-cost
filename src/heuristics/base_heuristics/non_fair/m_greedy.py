@@ -3,14 +3,15 @@ Implementation of the Modified Greedy Heuristic by Tang et al.
 """
 import random
 import networkx as nx
+import heapq
 
 from tqdm import tqdm
 
-from src.diffusion_models import (
-    estimate_cascade_influence,
-    estimate_cascade_by_community,
+from src.diffusion_models import estimate_cascade_influence, estimate_cascade_by_community
+from src.metrics import (
+    utility_gap,
 )
-from src.metrics import utility_gap
+from src.utils import CELFNode
 
 
 def modified_greedy(
@@ -40,7 +41,9 @@ def modified_greedy(
     Returns:
         A set of selected nodes with high influence
     """
-    selected, candidates = set(), set(graph.nodes)
+    selected = set()
+    budget_used = 0.0
+    iteration = 0
 
     # Cache for influence calculations
     influence_cache = {}
@@ -58,7 +61,7 @@ def modified_greedy(
             )
         return influence_cache[seed_set]
 
-    def marginal_gain(seed_set: set[int], node: int) -> float:
+    def compute_marginal_gain(seed_set: set[int], node: int) -> float:
         """
         Calculate marginal gain of adding a node to seed set
         """
@@ -66,57 +69,92 @@ def modified_greedy(
         new_set = frozenset(seed_set | {node})
         return get_influence(seed_set=new_set) - get_influence(seed_set=current_set)
 
-    # Cache single node influences for efficiency and later use
-    single_node_influences = {}
-    for node in graph.nodes:
-        single_node_influences[node] = get_influence(seed_set=frozenset([node]))
+    priority_queue = []
 
-    max_iterations = len(candidates)
-    progress_bar = tqdm(desc='Selecting seeds', total=max_iterations)
+    single_node_welfare = {}
+    affordable_nodes = [n for n in graph.nodes if costs[n] <= budget]
 
-    # Greedy selection phase
-    while candidates:
-        # Only consider nodes that fit within the budget
-        budget_used = sum(costs[i] for i in selected)
-        feasible_candidates = [
-            node for node in candidates
-            if budget_used + costs[node] <= budget
-        ]
+    initial_progress = tqdm(graph.nodes, desc='Initial Computation')
 
-        if not feasible_candidates:
-            progress_bar.update(len(candidates))
-            break  # No more nodes can fit within budget
+    for node in initial_progress:
+        if costs[node] <= budget:
+            marginal_gain = compute_marginal_gain(selected, node)
+            marginal_gain_per_cost = marginal_gain / costs[node] if costs[node] > 0 else 0.0
 
-        best_node = max(
-            feasible_candidates,
-            key=lambda node: marginal_gain(selected, node) / costs[node] if costs[node] > 0 else float('inf')
-        )
+            celf_node = CELFNode(
+                node_id=node,
+                marginal_gain=marginal_gain,
+                cost=costs[node],
+                marginal_gain_per_cost=marginal_gain_per_cost,
+                iteration_updated=0,
+            )
 
-        candidates.remove(best_node)
-        selected.add(best_node)
+            heapq.heappush(priority_queue, celf_node)
+            single_node_welfare[node] = get_influence(frozenset([node]))
+
+    initial_progress.close()
+
+    max_iterations = len(priority_queue)
+    progress_bar = tqdm(desc='Seed Selection', total=max_iterations)
+
+    while priority_queue and budget_used < budget:
+        iteration += 1
+
+        current_best = heapq.heappop(priority_queue)
+
+        if budget_used + current_best.cost > budget:
+            progress_bar.update(1)
+            continue
+
+        if current_best.iteration_updated < iteration - 1:
+            new_marginal_gain = compute_marginal_gain(selected, current_best.node_id)
+            new_marginal_gain_per_cost = new_marginal_gain / current_best.cost if current_best.cost > 0 else 0.0
+
+            updated_node = CELFNode(
+                node_id=current_best.node_id,
+                marginal_gain=new_marginal_gain,
+                cost=current_best.cost,
+                marginal_gain_per_cost=new_marginal_gain_per_cost,
+                iteration_updated=iteration,
+            )
+
+            heapq.heappush(priority_queue, updated_node)
+            continue
+
+        if priority_queue:
+            next_best = priority_queue[0]
+
+            if (
+                    next_best.iteration_updated < iteration - 1 and
+                    next_best.marginal_gain_per_cost > current_best.marginal_gain_per_cost
+            ):
+                heapq.heappush(priority_queue, current_best)
+                continue
+
+        selected.add(current_best.node_id)
+        budget_used += current_best.cost
 
         progress_bar.update(1)
         progress_bar.set_postfix(
             {
                 'seeds': len(selected),
-                'spread': f'{get_influence(frozenset(selected)):.2f}',
-                'budget_used': f'{sum(costs[i] for i in selected):.2f}/{budget:.2f}',
+                'welfare': f'{get_influence(frozenset(selected)):.4f}',
+                'budget_used': f'{budget_used:.2f}/{budget:.2f}',
+                'queue_size': len(priority_queue),
             }
         )
 
     progress_bar.close()
 
-    # Find the best singleton node
-    affordable = [n for n in graph.nodes if costs[n] <= budget]
-    best_singleton = max(affordable, key=lambda n: single_node_influences[n])
-    best_singleton_influence = single_node_influences[best_singleton]
+    if not affordable_nodes:
+        return selected
 
-    # Get final influence of selected set
-    selected_influence = get_influence(seed_set=frozenset(selected))
+    best_singleton = max(affordable_nodes, key=lambda n: single_node_welfare[n])
+    best_singleton_welfare = single_node_welfare[best_singleton]
+    selected_welfare = get_influence(frozenset(selected)) if selected else 0.0
 
-    # Return the better option
     return (
-        selected if selected_influence >= best_singleton_influence
+        selected if selected_welfare >= best_singleton_welfare
         else {best_singleton}
     )
 
@@ -125,10 +163,9 @@ def modified_greedy(
 # Example Usage
 # ----------------------------
 if __name__ == '__main__':
-    graph = nx.erdos_renyi_graph(
-        n=100,
-        p=0.05,
-        directed=True,
+    graph = nx.barabasi_albert_graph(
+        n=10000,
+        m=3,
     )
 
     # Assign communities randomly
