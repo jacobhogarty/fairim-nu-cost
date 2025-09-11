@@ -1,5 +1,5 @@
 """
-Optimized Welfare-Based Greedy algorithm with CELF++ and caching.
+Optimised Welfare-Based Greedy algorithm with CELF++ and caching.
 """
 import hashlib
 import heapq
@@ -27,10 +27,7 @@ class CacheStats:
 
 class OptimizedWelfareGreedy:
     """
-    Optimized Welfare-Based Greedy with:
-      - CELF++ lazy reevaluation
-      - Hashed seed-set cache keys + simple eviction
-      - Reused IndependentCascadeModel instance
+    Optimised Welfare-Based Greedy
     """
 
     def __init__(
@@ -203,7 +200,7 @@ def opt_welfare_greedy(
     **kwargs,
 ) -> set[int]:
     """
-    Optimized Welfare-Based Greedy with CELF++ and caching.
+    Optimised Welfare-Based Greedy with CELF++ and caching.
     """
     opt = OptimizedWelfareGreedy(
         graph=graph,

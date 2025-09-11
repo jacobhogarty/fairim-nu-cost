@@ -28,9 +28,7 @@ class CacheStats:
 
 class OriginalGRASP:
     """
-    GRASP implementation following Lozano-Osorio et al. faithfully.
-    - Construction: g_dist heuristic + α-RCL.
-    - Local Search: Algorithm 3 (Replace(S,u,P)).
+    GRASP implementation following Lozano-Osorio et al.
     """
 
     def __init__(
@@ -71,7 +69,6 @@ class OriginalGRASP:
         self.influence_cache: dict[str, float] = {}
         self.cache_stats = CacheStats()
 
-    # ----------------- helpers -----------------
     def _hash_seed_set(self, seed_set: set[int]) -> str:
         if not seed_set:
             return "empty"
