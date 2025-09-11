@@ -6,10 +6,9 @@ from .opt_c_fim import opt_c_fim
 from .grasp_variants import (
     g_deg_welfare_grasp,
     two_step_welfare_grasp,
-    coverage_grasp,
     cost_effective_welfare_grasp,
     bridge_grasp,
-    g_dist,
+    g_dist_grasp,
 )
 
 __all__ = [
@@ -18,9 +17,8 @@ __all__ = [
     'opt_marginal_packing',
     'g_deg_welfare_grasp',
     'two_step_welfare_grasp',
-    'coverage_grasp',
     'cost_effective_welfare_grasp',
     'bridge_grasp',
     'opt_c_fim',
-    'g_dist',
+    'g_dist_grasp',
 ]

@@ -108,7 +108,9 @@ class OptimizedWelfareGreedy:
         self.cache_stats["welfare"].misses += 1
         infl = self._get_influence_by_comm(seeds)
         w = bergson_samuelson_swf(
-            utilities=infl, sizes=self.community_sizes, alpha=self.alpha
+            utilities=infl,
+            sizes=self.community_sizes,
+            alpha=self.alpha,
         )
         self.welf_cache[key] = w
         return w

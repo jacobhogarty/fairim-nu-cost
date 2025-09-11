@@ -1,5 +1,5 @@
 """
-Optimised Water Filling Greedy - maintains algorithmic guarantees while improving performance.
+Optimised Water Filling Greedy.
 """
 import hashlib
 import heapq

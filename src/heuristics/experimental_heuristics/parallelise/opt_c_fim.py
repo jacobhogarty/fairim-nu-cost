@@ -1,5 +1,5 @@
 """
-Optimized Cost-aware Fair Influence Maximisation (CFIM) with CELF++ and caching.
+Optimised Cost-aware Fair Influence Maximisation (CFIM) with CELF++ and caching.
 """
 import hashlib
 import heapq
@@ -26,15 +26,7 @@ class CacheStats:
         return self.hits / t if t else 0.0
 
 
-class OptimizedCFIM:
-    """
-    Optimized Cost-aware Fair Influence Maximisation with:
-      - CELF++ lazy reevaluation
-      - Hashed seed-set cache keys + simple eviction
-      - Reused IndependentCascadeModel instance
-      - Initial heap filtered to nodes affordable within budget
-    """
-
+class OptimisedCFIM:
     def __init__(
         self,
         graph: nx.Graph | nx.DiGraph,
@@ -53,25 +45,21 @@ class OptimizedCFIM:
         self.num_sims = num_sims
         self.cache_size_limit = cache_size_limit
 
-        # Reusable IC model
         self.ic = IndependentCascadeModel(graph)
 
-        # Communities and sizes for isoelastic SWF
         self.communities = set(nx.get_node_attributes(graph, "community").values())
         self.community_sizes = {
             c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
             for c in self.communities
         }
 
-        # Caches
-        self.infl_cache: dict[str, dict[int, float]] = {}  # key -> {community: frac}
-        self.welf_cache: dict[str, float] = {}  # key -> welfare
+        self.infl_cache: dict[str, dict[int, float]] = {}
+        self.welf_cache: dict[str, float] = {}
         self.cache_stats = {
             "influence": CacheStats(),
             "welfare": CacheStats(),
         }
 
-    # ---------- Caching helpers ----------
     def _hash_seed_set(self, seeds: frozenset[int]) -> str:
         if not seeds:
             return "empty"
@@ -93,7 +81,6 @@ class OptimizedCFIM:
                 num_simulations=self.num_sims,
             )
 
-        # Evict ~10% when exceeding the limit
         if len(self.infl_cache) >= self.cache_size_limit:
             drop = max(1, len(self.infl_cache) // 10)
             for k in list(self.infl_cache.keys())[:drop]:
@@ -117,7 +104,6 @@ class OptimizedCFIM:
         self.welf_cache[key] = w
         return w
 
-    # ---------- Cost-effectiveness score ----------
     def _cost_effectiveness_score(self, chosen: set[int], node: int) -> float:
         if node in chosen:
             return 0.0
@@ -126,7 +112,6 @@ class OptimizedCFIM:
         welfare_gain = self._get_welfare(new) - self._get_welfare(cur)
         return welfare_gain / self.costs[node] if self.costs[node] > 0 else 0.0
 
-    # ---------- Main ----------
     def run(self) -> set[int]:
         selected: set[int] = set()
         budget_used = 0.0
@@ -217,9 +202,9 @@ def opt_c_fim(
     **kwargs,
 ) -> set[int]:
     """
-    Optimized Cost-aware Fair Influence Maximisation with CELF++ and caching.
+    Optimised Cost-aware Fair Influence Maximisation with CELF++ and caching.
     """
-    opt = OptimizedCFIM(
+    opt = OptimisedCFIM(
         graph=graph,
         costs=costs,
         budget=budget,

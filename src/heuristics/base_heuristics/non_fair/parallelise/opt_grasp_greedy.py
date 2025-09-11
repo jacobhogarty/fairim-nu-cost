@@ -1,20 +1,15 @@
 """
-Optimized implementation of the GRASP algorithm with performance improvements
-based on the approach used in g_2step.py.
+Optimised implementation of the GRASP algorithm
 """
-import random
 import hashlib
+import random
 from dataclasses import dataclass
 
-import numpy as np
 import networkx as nx
 from tqdm import tqdm
 
+from src.diffusion_models import IndependentCascadeModel
 from src.metrics import utility_gap
-from src.diffusion_models import (
-    estimate_cascade_influence,
-    estimate_cascade_by_community,
-)
 
 
 @dataclass
@@ -58,6 +53,9 @@ class OptimizedGRASP:
         self.num_sims = num_sims
         self.cache_size_limit = cache_size_limit
 
+        # Use same cascade model as g_bridge
+        self.cascade_model = IndependentCascadeModel(graph)
+
         # Pre-compute node degrees for efficiency
         if self.graph.is_directed():
             self.node_degrees = dict(self.graph.out_degree())
@@ -67,7 +65,7 @@ class OptimizedGRASP:
         # Pre-compute neighbor sets
         self.neighbor_sets = {node: set(self.graph.neighbors(node)) for node in self.graph.nodes()}
 
-        # Caching system
+        # Caching system - use same approach as g_bridge
         self.influence_cache = {}  # hash -> influence_score
         self.cache_stats = CacheStats()
 
@@ -76,20 +74,20 @@ class OptimizedGRASP:
 
     def _hash_seed_set(self, seed_set: set[int]) -> str:
         """
-        Create efficient hash key for seed sets.
+        Create efficient hash key for seed sets - same as g_bridge.
         """
         if not seed_set:
             return 'empty'
-        # Sort for consistent hashing and use frozenset for better stability
-        return str(sorted(seed_set))
+        # Sort for consistent hashing
+        sorted_seeds = sorted(seed_set)
+        return hashlib.md5(str(sorted_seeds).encode()).hexdigest()
 
     def _get_influence_with_cache(self, seed_set: set[int], num_simulations: int) -> float:
         """
-        Get influence spread with caching.
+        Get influence spread with caching - using g_bridge approach.
         """
-        # Create a more stable cache key
-        seed_tuple = tuple(sorted(seed_set)) if seed_set else ()
-        cache_key = (seed_tuple, num_simulations, self.propagation_rate)
+        base_hash = self._hash_seed_set(seed_set)
+        cache_key = f'{base_hash}_{num_simulations}'
 
         if cache_key in self.influence_cache:
             self.cache_stats.hits += 1
@@ -100,30 +98,28 @@ class OptimizedGRASP:
         if not seed_set:
             result = 0.0
         else:
-            result = estimate_cascade_influence(
-                graph=self.graph,
-                seeds=seed_set,
-                num_simulations=num_simulations,
+            # Use same influence estimation as g_bridge
+            influence_by_community = self.cascade_model.estimate_influence_by_community(
+                seeds=list(seed_set),
                 probability=self.propagation_rate,
+                num_simulations=num_simulations
             )
+            # Sum across all communities to get total influence
+            result = sum(influence_by_community.values())
 
-        # More conservative cache management - only clean when really needed
+        # Cache management - same as g_bridge (remove 10% of oldest entries)
         if len(self.influence_cache) >= self.cache_size_limit:
-            # Remove 20% of entries, not just 10%
-            items_to_remove = max(1, len(self.influence_cache) // 5)
-            # Convert to list of items and sort by access pattern (FIFO)
-            cache_items = list(self.influence_cache.items())
-            keys_to_remove = [key for key, _ in cache_items[:items_to_remove]]
+            items_to_remove = len(self.influence_cache) // 10
+            keys_to_remove = list(self.influence_cache.keys())[:items_to_remove]
             for key in keys_to_remove:
-                self.influence_cache.pop(key, None)
+                del self.influence_cache[key]
 
         self.influence_cache[cache_key] = result
         return result
 
-    def _g_dist(self, node: int, seed_set: set[int]) -> float:
+    def _g_deg(self, node: int) -> float:
         """
         Compute a node's adjusted degree based on whether it has connections to the current seed set.
-        Optimized version using pre-computed neighbor sets.
 
         Args:
             node: The node to evaluate
@@ -132,10 +128,7 @@ class OptimizedGRASP:
         Returns:
             Adjusted degree value used for prioritising node selection
         """
-        degree = self.node_degrees[node]
-
-        # Use pre-computed neighbor sets for faster intersection
-        return degree / 2 if self.neighbor_sets[node] & seed_set else degree
+        return float(self.node_degrees[node])
 
     def _construct_solution(self) -> set[int]:
         """
@@ -158,19 +151,16 @@ class OptimizedGRASP:
             seed_set.add(random_node)
             remaining_budget -= self.costs[random_node]
 
-        # Pre-filter nodes by cost to avoid repeated cost checks
-        affordable_nodes = [node for node in self.all_nodes if self.costs[node] <= self.budget]
-
         while remaining_budget > 0:
             candidate_list = [
-                node for node in affordable_nodes
+                node for node in self.all_nodes
                 if node not in seed_set and self.costs[node] <= remaining_budget
             ]
             if not candidate_list:
                 break
 
-            # Vectorized computation where possible
-            g_values = {node: self._g_dist(node, seed_set) for node in candidate_list}
+            # Compute g_dist values for candidates
+            g_values = {node: self._g_deg(node) for node in candidate_list}
 
             if not g_values:
                 break
@@ -197,7 +187,6 @@ class OptimizedGRASP:
     def _local_search(self, seed_set: set[int]) -> set[int]:
         """
         Improve a seed set using local search by attempting beneficial single-node swaps.
-        Optimized version with caching and limited candidate evaluation.
 
         Args:
             seed_set: The initial seed set
@@ -205,13 +194,10 @@ class OptimizedGRASP:
         Returns:
             A (locally) improved seed set with potentially higher influence spread
         """
-        current_seed_set = seed_set.copy()  # Work with a copy
+        current_seed_set = seed_set.copy()
         best_spread = self._get_influence_with_cache(current_seed_set, self.num_sims // 10)
         evaluations = 0
         improved = True
-
-        # Pre-compute affordable nodes to avoid repeated filtering
-        affordable_nodes = [node for node in self.all_nodes if self.costs[node] <= self.budget]
 
         while improved and evaluations < self.max_evaluations:
             improved = False
@@ -227,7 +213,7 @@ class OptimizedGRASP:
                 available_budget = self.budget - sum(self.costs[n] for n in temp_seed_set)
 
                 candidate_list = [
-                    v for v in affordable_nodes
+                    v for v in self.all_nodes
                     if v not in current_seed_set and self.costs[v] <= available_budget
                 ]
 
@@ -235,13 +221,13 @@ class OptimizedGRASP:
                     continue
 
                 # Compute g_dist values for all candidates
-                g_values = {node: self._g_dist(node, temp_seed_set) for node in candidate_list}
+                g_values = {node: self._g_deg(node) for node in candidate_list}
 
                 # Sort candidates by g_dist value (descending)
                 sorted_candidates = sorted(candidate_list, key=lambda x: g_values[x], reverse=True)
 
-                # Limit the number of candidates to evaluate for performance
-                max_candidates_to_check = min(15, len(sorted_candidates))  # Reduced for better caching
+                # Use same limit as g_bridge (20 candidates)
+                max_candidates_to_check = min(20, len(sorted_candidates))
 
                 for node in sorted_candidates[:max_candidates_to_check]:
                     if evaluations >= self.max_evaluations:
@@ -273,7 +259,7 @@ class OptimizedGRASP:
             The best seed set found and its estimated influence spread
         """
         best_seed_set = set()
-        best_spread = 0
+        best_spread = -float('inf')
 
         iteration = 0
         progress_bar = tqdm(desc='Selecting seeds', total=self.max_iter)
@@ -301,8 +287,7 @@ class OptimizedGRASP:
                     'seeds': len(best_seed_set),
                     'spread': f'{best_spread:.1f}',
                     'cost': f'{total_costs:.1f}',
-                    'cache': f'{self.cache_stats.hits}/{self.cache_stats.hits + self.cache_stats.misses}',
-                    'hit_rate': f'{self.cache_stats.hit_rate:.1%}',
+                    'cache': f'{self.cache_stats.hit_rate:.1%}',
                 }
             )
 
@@ -314,8 +299,7 @@ class OptimizedGRASP:
         return best_seed_set, best_spread
 
 
-# Convenience function matching the original API
-def optimized_grasp(
+def optimised_grasp(
         graph: nx.Graph | nx.DiGraph,
         costs: dict[int, float],
         budget: float,
@@ -327,7 +311,7 @@ def optimized_grasp(
         **kwargs
 ) -> tuple[set[int], float]:
     """
-    Optimized GRASP function with performance improvements.
+    Optimised GRASP function with performance improvements.
     """
     grasp = OptimizedGRASP(
         graph=graph,
@@ -348,30 +332,19 @@ def optimized_grasp(
 # Example Usage
 # ----------------------------
 if __name__ == "__main__":
-    # Create a larger test graph for performance testing
-    graph = nx.barabasi_albert_graph(
-        n=5000,
-        m=3,
-    )
+    graph = nx.barabasi_albert_graph(n=1000, m=3, seed=42)
+    graph = graph.to_directed()
 
     for i, node in enumerate(graph.nodes()):
-        graph.nodes[node]['community'] = random.randint(0, 4)  # More communities
+        graph.nodes[node]["community"] = random.randint(0, 2)
 
-    # Set node costs based on degree
-    costs = {}
-    deg_avg = np.mean([graph.degree(node) for node in graph.nodes()])
-    epsilon = 1e-6
-
-    for node in graph.nodes():
-        cost = max(epsilon, graph.degree(node) / deg_avg)
-        costs[node] = float(cost)
-        graph.nodes[node]['node_costs'] = float(cost)
+    costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}
 
     budget = 50
     alpha = 0.5
     p = 0.1
     num_sims = 1000
-    max_iter = 50
+    max_iter = 15
 
     print(f'Graph: {len(graph.nodes())} nodes, {len(graph.edges())} edges')
     print(f'Budget: {budget}')
@@ -400,13 +373,11 @@ if __name__ == "__main__":
     print(f'Cache hit rate: {grasp_solver.cache_stats.hit_rate:.1%}')
     print(f'Total cache entries: {len(grasp_solver.influence_cache)}')
 
-    # Final evaluation
-    final_frac = estimate_cascade_by_community(
-        graph=graph,
-        seeds=seeds,
+    # Final evaluation using same approach as g_bridge
+    final_frac = grasp_solver.cascade_model.estimate_influence_by_community(
+        seeds=list(seeds),
         probability=p,
         num_simulations=num_sims // 2,
-        random_state=42,
     )
     print(f'Expected influenced fraction per community: {final_frac}')
     print(f'Utility Gap: {utility_gap(final_frac):.4f}')

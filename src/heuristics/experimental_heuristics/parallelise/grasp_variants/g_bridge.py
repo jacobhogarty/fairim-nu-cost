@@ -85,6 +85,7 @@ class BridgeGRASP:
         self.neighbor_sets = {node: set(self.graph.neighbors(node)) for node in self.graph.nodes()}
 
         self.node_comm = nx.get_node_attributes(self.graph, "community")
+        self.all_nodes = list(self.graph.nodes())
 
         self.bridge_deg = {}
         for u in self.graph.nodes():
@@ -214,60 +215,46 @@ class BridgeGRASP:
         """
         Perform local search to improve the seed set.
         """
-        best_score = float('-inf')
-        evaluations = 0
+        seeds = seed_set.copy()
+
         improved = True
-
-        # Pre-compute candidate lists to avoid repeated computation
-        all_nodes = list(self.graph.nodes())
-
-        while improved and evaluations < self.max_evaluations:
+        while improved and self.max_evaluations > 0:
             improved = False
-            nodes = list(seed_set)
-            random.shuffle(nodes)
 
-            for random_node in nodes:
-                if evaluations >= self.max_evaluations:
+            potential_seeds = list(seeds)
+            random.shuffle(potential_seeds)
+
+            for u in potential_seeds:
+                if self.max_evaluations <= 0:
                     break
 
-                # Current budget if we remove this node
-                available_budget = self.budget - sum(self.costs[n] for n in seed_set - {random_node})
+                self.max_evaluations -= 1
 
-                # Find candidates that fit in the available budget
-                candidate_list = [
-                    v for v in all_nodes
-                    if v not in seed_set and self.costs[v] <= available_budget
-                ]
+                seed_minus_candidate = seeds - {u}
+                cost_minus_u = sum(self.costs[v] for v in seed_minus_candidate)
+                available = self.budget - cost_minus_u
 
-                if not candidate_list:
-                    continue
+                candidates = [v for v in self.all_nodes if v not in seeds and self.costs[v] <= available]
 
-                # Compute degree discount values for candidates
-                temp_seed_set = seed_set - {random_node}
-                g_values = {node: self._g_bridge(node) for node in candidate_list}
-                sorted_candidates = sorted(candidate_list, key=lambda x: g_values[x], reverse=True)
+                p_star = set()
+                used = 0.0
+                for v in candidates:
+                    if used + self.costs[v] <= available:
+                        p_star.add(v)
+                        used += self.costs[v]
 
-                # Try top candidates
-                for node in sorted_candidates[:min(20, len(sorted_candidates))]:  # Limit candidates to check
-                    if evaluations >= self.max_evaluations:
-                        break
+                seed_prime = seed_minus_candidate | p_star
 
-                    new_seed = temp_seed_set | {node}
-                    total_cost = sum(self.costs[n] for n in new_seed)
+                cand_spread = self._evaluate_seed_set(seeds, self.num_sims // 10)
+                spread_prime = self._evaluate_seed_set(seed_prime, self.num_sims // 10)
+                self.max_evaluations -= 1
 
-                    if total_cost <= self.budget:
-                        evaluations += 1
-                        score = self._evaluate_seed_set(new_seed, self.num_sims // 10)
-                        if score > best_score:
-                            seed_set = new_seed
-                            best_score = score
-                            improved = True
-                            break
-
-                if improved:
+                if sum(self.costs[x] for x in seed_prime) <= self.budget and spread_prime > cand_spread:
+                    seeds = seed_prime
+                    improved = True
                     break
 
-        return seed_set
+        return seeds
 
     def solve(self) -> set[int]:
         """
@@ -277,7 +264,7 @@ class BridgeGRASP:
         best_score = -float('inf')
         iteration = 0
 
-        progress_bar = tqdm(desc='Iterations', total=self.max_iter)
+        progress_bar = tqdm(desc='Bridge', total=self.max_iter)
 
         while iteration < self.max_iter:
             # Construction phase with reduced simulations
@@ -343,14 +330,14 @@ def bridge_grasp(
 
 
 if __name__ == "__main__":
-    n = 1000  # Number of nodes
+    n = 100000  # Number of nodes
     tau1 = 2.5  # Power-law exponent for degree distribution
     tau2 = 1.5  # Power-law exponent for community size distribution
-    mu = 0.3  # Mixing parameter (fraction of edges between communities)
+    mu = 0.05  # Mixing parameter (fraction of edges between communities)
     min_degree = 10  # Minimum degree
-    max_degree = 50  # Maximum degree
+    max_degree = 25  # Maximum degree
     min_community = 20  # Minimum community size
-    max_community = 100  # Maximum community size
+    max_community = 10000  # Maximum community size
     seed = 42
     graph = nx.generators.community.LFR_benchmark_graph(
         n=n,
@@ -365,27 +352,12 @@ if __name__ == "__main__":
     )
     graph = graph.to_directed()
 
-    community_labels = {}
-    for node, communities in graph.nodes(data="community"):
-        community_labels[node] = list(communities)[0]
+    for i, node in enumerate(graph.nodes()):
+        graph.nodes[node]["community"] = random.randint(0, 2)
 
-    unique_ids = sorted(set(community_labels.values()))
-    id_map = {old_id: new_id for new_id, old_id in enumerate(unique_ids)}
-    relabeled_community_labels = {node: id_map[cid] for node, cid in community_labels.items()}
+    costs = {node: random.uniform(0.5, 2.0) for node in graph.nodes()}
 
-    # Apply relabeled community attributes to the graph
-    nx.set_node_attributes(graph, relabeled_community_labels, "community")
-
-    # Set node costs based on degree
-    costs = {}
-    base_cost = 1.0
-    degree_weight = 0.1  # Tune this
-    for node in graph.nodes():
-        cost = base_cost + degree_weight * graph.degree(node)
-        costs[node] = float(cost)
-        graph.nodes[node]['node_costs'] = float(cost)
-
-    alpha = 0.0
+    alpha = 0.5
     welfare = -9  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
     budget = 25  # Total budget available
@@ -402,7 +374,7 @@ if __name__ == "__main__":
         alpha=alpha,
         welfare=welfare,
         propagation_rate=p,
-        max_iter=50,
+        max_iter=15,
         num_sims=1000,
     )
 

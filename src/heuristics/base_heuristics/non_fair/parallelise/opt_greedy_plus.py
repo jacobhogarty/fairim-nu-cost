@@ -27,10 +27,6 @@ class CacheStats:
 
 
 class OptimisedGreedyPlus:
-    """
-    Greedy+ with CELF++ lazy evaluation, hashed seed-set caching, and bounded cache size.
-    Follows the same optimisation approach used in OptimisedMGreedy.
-    """
 
     def __init__(
             self,
@@ -48,14 +44,11 @@ class OptimisedGreedyPlus:
         self.num_sims = num_sims
         self.cache_size_limit = cache_size_limit
 
-        # Reusable IC model instance
         self.cascade_model = IndependentCascadeModel(graph)
 
-        # Caching + stats
         self.influence_cache: dict[str, float] = {}
         self.cache_stats = {"influence": CacheStats()}
 
-    # ---------- Cache helpers ----------
     def _hash_seed_set(self, seed_set: frozenset[int]) -> str:
         if not seed_set:
             return "empty"
@@ -75,7 +68,6 @@ class OptimisedGreedyPlus:
             num_simulations=self.num_sims,
         )
 
-        # Simple eviction: drop oldest ~10% when over the limit
         if len(self.influence_cache) >= self.cache_size_limit:
             to_remove = max(1, len(self.influence_cache) // 10)
             for k in list(self.influence_cache.keys())[:to_remove]:
@@ -96,10 +88,8 @@ class OptimisedGreedyPlus:
         budget_used = 0.0
         iteration = 0
 
-        # Keep all greedy prefixes for Greedy+ augmentation phase
         history: list[set[int]] = [set()]
 
-        # Build initial heap only with affordable nodes
         priority_queue: list[CELFNode] = []
         affordable_nodes = [n for n in self.graph.nodes if self.costs[n] <= self.budget]
 
@@ -130,7 +120,6 @@ class OptimisedGreedyPlus:
             if budget_used + current_best.cost > self.budget:
                 continue
 
-            # CELF++ lazy re-evaluation
             if current_best.iteration_updated < iteration - 1:
                 new_mg = self._marginal_gain(selected, current_best.node_id)
                 new_mg_per_cost = new_mg / current_best.cost if current_best.cost > 0 else 0.0
@@ -146,7 +135,6 @@ class OptimisedGreedyPlus:
                 )
                 continue
 
-            # Defer if next_best (stale) looks better by mg/c
             if priority_queue:
                 next_best = priority_queue[0]
                 if (
@@ -173,16 +161,13 @@ class OptimisedGreedyPlus:
             )
         greedy_bar.close()
 
-        # Baseline result from greedy
         best_result = set(selected)
         best_welfare = self._get_influence(frozenset(selected)) if selected else 0.0
 
-        # Greedy+ enhancement: for each greedy prefix, try adding one extra node
         enhance_bar = tqdm(total=len(history), desc="Greedy+ Enhancement")
         for partial in history:
             partial_cost = sum(self.costs[i] for i in partial)
 
-            # Iterate only nodes affordable with this prefix
             for node in affordable_nodes:
                 if node in partial:
                     continue
@@ -216,12 +201,6 @@ def opt_greedy_plus(
         num_sims: int = 100,
         **kwargs,
 ) -> set[int]:
-    """
-    Optimised Greedy+:
-    - CELF++ lazy evaluation
-    - Hashed, bounded influence cache with hit-rate stats
-    - Reused IC model instance
-    """
     optimiser = OptimisedGreedyPlus(
         graph=graph,
         costs=costs,
@@ -251,7 +230,7 @@ if __name__ == "__main__":
         budget=5,
         probability=0.1,
         num_sims=1000,
-        cache_size_limit=100000,  # optional override
+        cache_size_limit=100000,
     )
     print(f"Final seeds: {sorted(seeds)}")
 

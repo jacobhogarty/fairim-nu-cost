@@ -5,8 +5,11 @@ from .greedy_plus import greedy_plus
 from .parallelise import (
     mgreedy_optimised,
     opt_greedy_plus,
-    optimized_grasp,
+    optimised_grasp,
     opt_kempe_greedy,
+    original_grasp,
+    cost_grasp,
+    g_dist_bim_grasp,
 )
 
 __all__ = [
@@ -15,7 +18,10 @@ __all__ = [
     'modified_greedy',
     'greedy_plus',
     'mgreedy_optimised',
-    'optimized_grasp',
+    'optimised_grasp',
     'opt_greedy_plus',
     'opt_kempe_greedy',
+    'original_grasp',
+    'cost_grasp',
+    'g_dist_bim_grasp',
 ]

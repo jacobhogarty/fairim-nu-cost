@@ -25,14 +25,7 @@ class CacheStats:
         return self.hits / t if t else 0.0
 
 
-class OptimizedKempeGreedy:
-    """
-    Optimized Kempe Greedy (Hill Climbing) with:
-      - CELF++ lazy reevaluation
-      - Hashed seed-set cache keys + simple eviction
-      - Reused IndependentCascadeModel instance
-    """
-
+class OptimisedKempeGreedy:
     def __init__(
         self,
         graph: nx.Graph | nx.DiGraph,
@@ -47,14 +40,11 @@ class OptimizedKempeGreedy:
         self.num_sims = num_sims
         self.cache_size_limit = cache_size_limit
 
-        # Reusable IC model
         self.ic = IndependentCascadeModel(graph)
 
-        # Cache
-        self.infl_cache: dict[str, float] = {}  # key -> influence
+        self.infl_cache: dict[str, float] = {}
         self.cache_stats = CacheStats()
 
-    # ---------- Caching helpers ----------
     def _hash_seed_set(self, seeds: frozenset[int]) -> str:
         if not seeds:
             return "empty"
@@ -76,7 +66,6 @@ class OptimizedKempeGreedy:
                 num_simulations=self.num_sims,
             )
 
-        # Evict ~10% when exceeding the limit
         if len(self.infl_cache) >= self.cache_size_limit:
             drop = max(1, len(self.infl_cache) // 10)
             for k in list(self.infl_cache.keys())[:drop]:
@@ -85,7 +74,6 @@ class OptimizedKempeGreedy:
         self.infl_cache[key] = result
         return result
 
-    # ---------- Marginal influence gain ----------
     def _marginal_influence_gain(self, chosen: set[int], node: int) -> float:
         if node in chosen:
             return 0.0
@@ -93,12 +81,10 @@ class OptimizedKempeGreedy:
         new = frozenset(chosen | {node})
         return self._get_influence(new) - self._get_influence(cur)
 
-    # ---------- Main ----------
     def run(self) -> set[int]:
         selected: set[int] = set()
         iteration = 0
 
-        # Priority queue seeded with all nodes
         pq: list[CELFNode] = []
         nodes = list(self.graph.nodes)
 
@@ -110,7 +96,7 @@ class OptimizedKempeGreedy:
                 CELFNode(
                     node_id=n,
                     marginal_gain=mg,
-                    cost=1.0,  # Unit cost for Kempe greedy
+                    cost=1.0,
                     marginal_gain_per_cost=mg,
                     iteration_updated=0,
                 ),
@@ -122,7 +108,6 @@ class OptimizedKempeGreedy:
             iteration += 1
             best = heapq.heappop(pq)
 
-            # CELF++: if stale, recompute marginal influence gain
             if best.iteration_updated < iteration - 1:
                 new_mg = self._marginal_influence_gain(selected, best.node_id)
                 heapq.heappush(
@@ -137,7 +122,6 @@ class OptimizedKempeGreedy:
                 )
                 continue
 
-            # Defer to a (stale) next-best if its gain is higher
             if pq:
                 nxt = pq[0]
                 if (
@@ -171,10 +155,7 @@ def opt_kempe_greedy(
     num_simulations: int = 1000,
     **kwargs,
 ) -> set[int]:
-    """
-    Optimized Kempe Greedy (Hill Climbing) with CELF++ and caching.
-    """
-    opt = OptimizedKempeGreedy(
+    opt = OptimisedKempeGreedy(
         graph=graph,
         k=k,
         probability=probability,

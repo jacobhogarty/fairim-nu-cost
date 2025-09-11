@@ -1,12 +1,10 @@
 """
-Marginal Packing (Greedy+) with CELF++, hashed & bounded caching, and a reusable IC model.
-Singleton welfare computations removed.
+Marginal Packing (Greedy+) with CELF++.
 """
 import hashlib
 import heapq
 import random
 from dataclasses import dataclass
-from typing import Any
 
 import networkx as nx
 from tqdm import tqdm
@@ -29,13 +27,7 @@ class CacheStats:
 
 class OptimisedMarginalPacking:
     """
-    Greedy+ (marginal packing) with:
-      - CELF++ lazy reevaluation
-      - Hashed seed-set cache keys + simple eviction
-      - Reused IndependentCascadeModel instance
-      - Initial heap filtered to nodes affordable within budget
-      - Live cache hit-rate in progress bars
-      - NO singleton welfare computations
+    Greedy+ (marginal packing)
     """
 
     def __init__(
@@ -56,25 +48,21 @@ class OptimisedMarginalPacking:
         self.num_sims = num_sims
         self.cache_size_limit = cache_size_limit
 
-        # Reusable IC model
         self.ic = IndependentCascadeModel(graph)
 
-        # Communities and sizes for isoelastic SWF
         self.communities = set(nx.get_node_attributes(graph, "community").values())
         self.community_sizes = {
             c: sum(1 for _, d in graph.nodes(data=True) if d.get("community") == c)
             for c in self.communities
         }
 
-        # Caches
-        self.infl_cache: dict[str, dict[int, float]] = {}  # key -> {community: frac}
-        self.welf_cache: dict[str, float] = {}  # key -> welfare
+        self.infl_cache: dict[str, dict[int, float]] = {}
+        self.welf_cache: dict[str, float] = {}
         self.cache_stats = {
             "influence": CacheStats(),
             "welfare": CacheStats(),
         }
 
-    # ---------- Caching helpers ----------
     def _hash_seed_set(self, seeds: frozenset[int]) -> str:
         if not seeds:
             return "empty"
@@ -96,7 +84,6 @@ class OptimisedMarginalPacking:
                 num_simulations=self.num_sims,
             )
 
-        # Evict ~10% when exceeding the limit (and keep caches consistent)
         if len(self.infl_cache) >= self.cache_size_limit:
             drop = max(1, len(self.infl_cache) // 10)
             for k in list(self.infl_cache.keys())[:drop]:
@@ -120,7 +107,6 @@ class OptimisedMarginalPacking:
         self.welf_cache[key] = w
         return w
 
-    # ---------- Marginal gain ----------
     def _marginal_welfare_gain(self, chosen: set[int], node: int) -> float:
         if node in chosen:
             return 0.0
@@ -128,22 +114,18 @@ class OptimisedMarginalPacking:
         new = frozenset(chosen | {node})
         return self._get_welfare(new) - self._get_welfare(cur)
 
-    # ---------- Main ----------
     def run(self) -> set[int]:
         selected: set[int] = set()
         budget_used = 0.0
         iteration = 0
 
-        # Keep greedy prefixes for the Greedy+ augmentation phase
         history: list[set[int]] = [set()]
 
-        # Priority queue seeded only with nodes affordable under total budget
         pq: list[CELFNode] = []
         affordable = [n for n in self.graph.nodes if self.costs[n] <= self.budget]
 
         init_bar = tqdm(affordable, desc="Initial Computation")
         for n in init_bar:
-            # Use true marginal gain over the empty set (no singleton welfare table)
             mg = self._marginal_welfare_gain(set(), n)
             mg_per_cost = mg / self.costs[n] if self.costs[n] > 0 else 0.0
             heapq.heappush(
@@ -163,11 +145,9 @@ class OptimisedMarginalPacking:
             iteration += 1
             best = heapq.heappop(pq)
 
-            # Budget feasibility
             if budget_used + best.cost > self.budget:
                 continue
 
-            # CELF++: if stale, recompute marginal gain wrt current 'selected'
             if best.iteration_updated < iteration - 1:
                 new_mg = self._marginal_welfare_gain(selected, best.node_id)
                 new_mgpc = new_mg / best.cost if best.cost > 0 else 0.0
@@ -183,7 +163,6 @@ class OptimisedMarginalPacking:
                 )
                 continue
 
-            # Defer to a (stale) next-best if its mg/c is higher
             if pq:
                 nxt = pq[0]
                 if (
@@ -193,7 +172,6 @@ class OptimisedMarginalPacking:
                     heapq.heappush(pq, best)
                     continue
 
-            # Accept
             selected.add(best.node_id)
             budget_used += best.cost
             history.append(set(selected))
@@ -211,11 +189,9 @@ class OptimisedMarginalPacking:
             )
         greedy_bar.close()
 
-        # Base result from greedy
         best_set = set(selected)
         best_w = self._get_welfare(frozenset(selected)) if selected else 0.0
 
-        # Greedy+ augmentation: for each greedy prefix, try one extra affordable node
         enh_bar = tqdm(total=len(history), desc="Greedy+ Enhancement")
         for prefix in history:
             prefix_cost = sum(self.costs[i] for i in prefix)
@@ -254,7 +230,6 @@ def opt_marginal_packing(
 ) -> set[int]:
     """
     Optimised Marginal Packing (Greedy+) with CELF++ and caching.
-    Singleton welfare computations removed.
     """
     opt = OptimisedMarginalPacking(
         graph=graph,

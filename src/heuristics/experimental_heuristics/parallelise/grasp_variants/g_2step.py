@@ -1,21 +1,18 @@
 """
 Optimized implementation of the WelfareGRASP algorithm with performance improvements.
 """
-import random
-
-import numpy as np
-import networkx as nx
-
 import hashlib
-from tqdm import tqdm
-
+import random
 from dataclasses import dataclass
 
+import networkx as nx
+from tqdm import tqdm
+
+from src.diffusion_models import IndependentCascadeModel
 from src.metrics import (
     bergson_samuelson_swf,
     utility_gap,
 )
-from src.diffusion_models import IndependentCascadeModel
 
 
 @dataclass
@@ -86,6 +83,28 @@ class TwoStepGRASP:
             self.node_degrees = dict(self.graph.degree())
 
         self.neighbor_sets = {node: set(self.graph.neighbors(node)) for node in self.graph.nodes()}
+        self.all_nodes = list(self.graph.nodes())
+
+        self.g_2step_values = self._precompute_g_2step_values()
+
+    def _precompute_g_2step_values(self) -> dict[int, float]:
+        """
+        Precompute g_2step values for all nodes once during initialization.
+        This eliminates repeated computation during the algorithm.
+        """
+        g_values = {}
+
+        for node in self.graph.nodes():
+            deg_v = self.node_degrees[node]
+            total = deg_v
+
+            # Sum degrees of neighbors
+            for neighbor in self._neighbors_iter(node):
+                total += self.node_degrees.get(neighbor, 0)
+
+            g_values[node] = float(total)
+
+        return g_values
 
     def _neighbors_iter(self, u: int):
         """Iterate out-neighbors if directed, else undirected neighbors."""
@@ -166,11 +185,7 @@ class TwoStepGRASP:
         g_2step: 1-hop degree + sum of 1-hop degrees of neighbors.
         Equivalent to: deg(v) + sum_{u in N(v)} deg(u).
         """
-        deg_v = self.node_degrees[node]
-        total = deg_v
-        for u in self._neighbors_iter(node):
-            total += self.node_degrees.get(u, 0)
-        return float(total)
+        return self.g_2step_values[node]
 
     def _construct_solution(self) -> set[int]:
         """
@@ -215,60 +230,46 @@ class TwoStepGRASP:
         """
         Perform local search to improve the seed set - optimized version.
         """
-        best_score = float('-inf')
-        evaluations = 0
+        seeds = seed_set.copy()
+
         improved = True
-
-        # Pre-compute candidate lists to avoid repeated computation
-        all_nodes = list(self.graph.nodes())
-
-        while improved and evaluations < self.max_evaluations:
+        while improved and self.max_evaluations > 0:
             improved = False
-            nodes = list(seed_set)
-            random.shuffle(nodes)
 
-            for random_node in nodes:
-                if evaluations >= self.max_evaluations:
+            potential_seeds = list(seeds)
+            random.shuffle(potential_seeds)
+
+            for u in potential_seeds:
+                if self.max_evaluations <= 0:
                     break
 
-                # Current budget if we remove this node
-                available_budget = self.budget - sum(self.costs[n] for n in seed_set - {random_node})
+                self.max_evaluations -= 1
 
-                # Find candidates that fit in the available budget
-                candidate_list = [
-                    v for v in all_nodes
-                    if v not in seed_set and self.costs[v] <= available_budget
-                ]
+                seed_minus_candidate = seeds - {u}
+                cost_minus_u = sum(self.costs[v] for v in seed_minus_candidate)
+                available = self.budget - cost_minus_u
 
-                if not candidate_list:
-                    continue
+                candidates = [v for v in self.all_nodes if v not in seeds and self.costs[v] <= available]
 
-                # Compute degree discount values for candidates
-                temp_seed_set = seed_set - {random_node}
-                g_values = {node: self._g_2step(node) for node in candidate_list}
-                sorted_candidates = sorted(candidate_list, key=lambda x: g_values[x], reverse=True)
+                p_star = set()
+                used = 0.0
+                for v in candidates:
+                    if used + self.costs[v] <= available:
+                        p_star.add(v)
+                        used += self.costs[v]
 
-                # Try top candidates
-                for node in sorted_candidates[:min(20, len(sorted_candidates))]:  # Limit candidates to check
-                    if evaluations >= self.max_evaluations:
-                        break
+                seed_prime = seed_minus_candidate | p_star
 
-                    new_seed = temp_seed_set | {node}
-                    total_cost = sum(self.costs[n] for n in new_seed)
+                cand_spread = self._evaluate_seed_set(seeds, self.num_sims // 10)
+                spread_prime = self._evaluate_seed_set(seed_prime, self.num_sims // 10)
+                self.max_evaluations -= 1
 
-                    if total_cost <= self.budget:
-                        evaluations += 1
-                        score = self._evaluate_seed_set(new_seed, self.num_sims // 10)
-                        if score > best_score:
-                            seed_set = new_seed
-                            best_score = score
-                            improved = True
-                            break
-
-                if improved:
+                if sum(self.costs[x] for x in seed_prime) <= self.budget and spread_prime > cand_spread:
+                    seeds = seed_prime
+                    improved = True
                     break
 
-        return seed_set
+        return seeds
 
     def solve(self) -> set[int]:
         """
@@ -278,7 +279,7 @@ class TwoStepGRASP:
         best_score = -float('inf')
         iteration = 0
 
-        progress_bar = tqdm(desc='Iterations', total=self.max_iter)
+        progress_bar = tqdm(desc='Two Step', total=self.max_iter)
 
         while iteration < self.max_iter:
             # Construction phase with reduced simulations
@@ -344,7 +345,7 @@ def two_step_welfare_grasp(
 
 
 if __name__ == "__main__":
-    n = 1000  # Number of nodes
+    n = 50000  # Number of nodes
     tau1 = 2.5  # Power-law exponent for degree distribution
     tau2 = 1.5  # Power-law exponent for community size distribution
     mu = 0.3  # Mixing parameter (fraction of edges between communities)
@@ -389,7 +390,7 @@ if __name__ == "__main__":
     alpha = 0.0
     welfare = -9  # Inequality-aversion parameter
     p = 0.1  # Edge activation probability
-    budget = 25  # Total budget available
+    budget = 100  # Total budget available
 
     print(f'Graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges')
     print(f'Budget: {budget}')
@@ -403,7 +404,7 @@ if __name__ == "__main__":
         alpha=alpha,
         welfare=welfare,
         propagation_rate=p,
-        max_iter=50,
+        max_iter=15,
         num_sims=1000,
     )
 

@@ -86,6 +86,7 @@ class GDegGRASP:
             self.node_degrees = dict(self.graph.degree())
 
         self.neighbor_sets = {node: set(self.graph.neighbors(node)) for node in self.graph.nodes()}
+        self.all_nodes = list(self.graph.nodes())
 
     def _hash_seed_set(self, seed_set: set[int]) -> str:
         """
@@ -206,60 +207,46 @@ class GDegGRASP:
         """
         Perform local search to improve the seed set - optimized version.
         """
-        best_score = float('-inf')
-        evaluations = 0
+        seeds = seed_set.copy()
+
         improved = True
-
-        # Pre-compute candidate lists to avoid repeated computation
-        all_nodes = list(self.graph.nodes())
-
-        while improved and evaluations < self.max_evaluations:
+        while improved and self.max_evaluations > 0:
             improved = False
-            nodes = list(seed_set)
-            random.shuffle(nodes)
 
-            for random_node in nodes:
-                if evaluations >= self.max_evaluations:
+            potential_seeds = list(seeds)
+            random.shuffle(potential_seeds)
+
+            for u in potential_seeds:
+                if self.max_evaluations <= 0:
                     break
 
-                # Current budget if we remove this node
-                available_budget = self.budget - sum(self.costs[n] for n in seed_set - {random_node})
+                self.max_evaluations -= 1
 
-                # Find candidates that fit in the available budget
-                candidate_list = [
-                    v for v in all_nodes
-                    if v not in seed_set and self.costs[v] <= available_budget
-                ]
+                seed_minus_candidate = seeds - {u}
+                cost_minus_u = sum(self.costs[v] for v in seed_minus_candidate)
+                available = self.budget - cost_minus_u
 
-                if not candidate_list:
-                    continue
+                candidates = [v for v in self.all_nodes if v not in seeds and self.costs[v] <= available]
 
-                # Compute degree discount values for candidates
-                temp_seed_set = seed_set - {random_node}
-                g_values = {node: self._g_deg(node) for node in candidate_list}
-                sorted_candidates = sorted(candidate_list, key=lambda x: g_values[x], reverse=True)
+                p_star = set()
+                used = 0.0
+                for v in candidates:
+                    if used + self.costs[v] <= available:
+                        p_star.add(v)
+                        used += self.costs[v]
 
-                # Try top candidates
-                for node in sorted_candidates[:min(20, len(sorted_candidates))]:  # Limit candidates to check
-                    if evaluations >= self.max_evaluations:
-                        break
+                seed_prime = seed_minus_candidate | p_star
 
-                    new_seed = temp_seed_set | {node}
-                    total_cost = sum(self.costs[n] for n in new_seed)
+                cand_spread = self._evaluate_seed_set(seeds, self.num_sims // 10)
+                spread_prime = self._evaluate_seed_set(seed_prime, self.num_sims // 10)
+                self.max_evaluations -= 1
 
-                    if total_cost <= self.budget:
-                        evaluations += 1
-                        score = self._evaluate_seed_set(new_seed, self.num_sims // 10)
-                        if score > best_score:
-                            seed_set = new_seed
-                            best_score = score
-                            improved = True
-                            break
-
-                if improved:
+                if sum(self.costs[x] for x in seed_prime) <= self.budget and spread_prime > cand_spread:
+                    seeds = seed_prime
+                    improved = True
                     break
 
-        return seed_set
+        return seeds
 
     def solve(self) -> set[int]:
         """

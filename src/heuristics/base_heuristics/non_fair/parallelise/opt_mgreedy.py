@@ -58,9 +58,7 @@ class OptimisedMGreedy:
 
         self.cascade_model = IndependentCascadeModel(graph)
 
-        # Efficient caching with proper key management
-        self.influence_cache = {}  # string hash -> dict
-        # Cache statistics
+        self.influence_cache = {}
         self.cache_stats = {
             'influence': CacheStats(),
         }

@@ -7,11 +7,11 @@ from .parallelise import (
     water_filling_greedy_optimised,
     g_deg_welfare_grasp,
     two_step_welfare_grasp,
-    coverage_grasp,
     cost_effective_welfare_grasp,
     bridge_grasp,
     opt_marginal_packing,
     opt_c_fim,
+    g_dist_grasp,
 )
 
 __all__ = [
@@ -23,9 +23,9 @@ __all__ = [
     'water_filling_greedy_optimised',
     'g_deg_welfare_grasp',
     'two_step_welfare_grasp',
-    'coverage_grasp',
     'cost_effective_welfare_grasp',
     'bridge_grasp',
     'opt_marginal_packing',
     'opt_c_fim',
+    'g_dist_grasp',
 ]
