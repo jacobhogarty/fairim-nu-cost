@@ -28,9 +28,7 @@ class CacheStats:
 
 class CostGRASP:
     """
-    GRASP implementation following Lozano-Osorio et al. faithfully.
-    - Construction: g_dist heuristic + α-RCL.
-    - Local Search: Algorithm 3 (Replace(S,u,P)).
+    GRASP implementation following Lozano-Osorio et al.
     """
 
     def __init__(
