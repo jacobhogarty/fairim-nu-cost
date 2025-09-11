@@ -30,7 +30,6 @@ def test__welfare_greedy_basic(small_graph, small_groups, k, alpha, p, expected_
     """
     seeds = welfare_greedy(
         graph=small_graph,
-        communities=small_groups,
         k=k,
         alpha=alpha,
         probability=p,
