@@ -207,11 +207,14 @@ This project is inspired by and builds upon the following key works:
 
 ### Core Theory
 * **Kempe, D., Kleinberg, J., & Tardos, E. (2003).** *Maximizing the Spread of Influence through a Social Network.* Proceedings of the 9th ACM SIGKDD. [[Link](https://dl.acm.org/doi/abs/10.1145/956750.956769)]
+* **Yaroslavtsev, G., et al. (2020).** *"Bring Your Own Greedy"+Max: Near-Optimal 1/2-Approximations for Submodular Knapsack.* Proceedings of the 23rd International Conference on Artificial Intelligence and Statistics [[Link](https://proceedings.mlr.press/v108/yaroslavtsev20a/yaroslavtsev20a-supp.pdf)]
+* **Tang, J, et al. (2020).** *Revisiting Modified Greedy Algorithm for Monotone Submodular Maximization with a Knapsack Constraint.* [[arXiv](https://arxiv.org/abs/2008.05391)]
 
 ### Fairness in Influence Maximisation
-* **Tsang, A., et al. (2019).** *Group-Fairness in Influence Maximization.* [[arXiv](http://arxiv.org/abs/1903.00967)]
+* **Tsang, A., et al. (2019).** *Group-Fairness in Influence Maximization.* [[arXiv](http://arxiv.org/abs/1903.00967)]https://arxiv.org/abs/2010.07431
 * **Ma, K., et al. (2023).** *Fair Influence Maximization in Social Networks: A Community-Based Evolutionary Algorithm.* [[arXiv](http://arxiv.org/abs/2311.14288)]
 * **Rahmattalabi, A., et al. (2020).** *Fair Influence Maximization: A Welfare Optimization Approach.* [[arXiv](http://arxiv.org/abs/2006.07906)]
+* **Halabi, M., et al. (2020).** *Fairness in Streaming Submodular Maximization: Algorithms and Hardness.* [[arXiv](https://arxiv.org/abs/2010.07431)]
   
 ### Budgeted Influence Maximisation
 * **Lozano-Osorio, I., et al. (2023).** *An efficient and effective GRASP algorithm for the Budget Influence Maximization Problem* [[Springer](https://link.springer.com/article/10.1007/s12652-023-04680-z)]
