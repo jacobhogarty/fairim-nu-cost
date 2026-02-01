@@ -60,7 +60,7 @@ non-uniform costs, incorporating the concept of fair influence maximisation (FIM
 distribution of influence across communities within the network, reducing influence gaps while maximising overall
 spread.
 
-The research will explore strategies to balance the dual objectives of maximising influence spread and promoting
+The research explores strategies to balance the dual objectives of maximising influence spread and promoting
 fairness in the presence of cost variability, developing and evaluating new heuristics to address these challenges
 effectively.
 
@@ -181,26 +181,43 @@ graphs, please follow the examples in `visualisation.ipynb`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## License
+
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for the full text. 
+
+The Apache 2.0 license allows for broad use, but it requires that the original copyright and `NOTICE` file are preserved in any redistributions. It also provides an explicit grant of patent rights from contributors to users.
+
+## Citation
+
+If you find these algorithms useful for your research or if you use this implementation in your work, please cite the following thesis:
+
+### BibTeX
+```bibtex
+@mastersthesis{hogarty2026fair,
+  author       = {Hogarty, Jacob},
+  title        = {Fair Influence Spread with Non-Uniform Costs in Social Networks},
+  school       = {University of Warwick},
+  year         = {2026},
+  address      = {London, England},
+  url          = {[https://github.com/jacobhogarty/fairim-nu-cost](https://github.com/jacobhogarty/fairim-nu-cost)}
+```
 ## References
 
 This project is inspired by and builds upon the following key works:
 
-- D. Kempe, J. Kleinberg, and E. Tardos, “Maximizing the Spread of
-  Influence through a Social Network,” Cornell University, New York,
-  Tech. Rep., 8 2003. [Online]. Available: https://dl.acm.org/doi/abs/10.1145/956750.956769
-- A. Tsang, B. Wilder, E. Rice, M. Tambe, and Y. Zick, “Group-Fairness
-  in Influence Maximization,” National University of Singapore, Tech.
-  Rep., 3 2019. [Online]. Available: http://arxiv.org/abs/1903.00967
-- K. Ma, X. Xu, H. Yang, R. Cao, and L. Zhang, “Fair Influence
-  Maximization in Social Networks: A Community-Based Evolutionary
-  Algorithm,” Anhui University, Hefei, Tech. Rep., 11 2023. [Online].
-  Available: http://arxiv.org/abs/2311.14288
-- A. Rahmattalabi, S. Jabbari, H. Lakkaraju, P. Vayanos, M. Izenberg,
-  R. Brown, E. Rice, and M. Tambe, “Fair Influence Maximization: A
-  Welfare Optimization Approach,” University of Southern California,
-  Tech. Rep., 6 2020. [Online]. Available: http://arxiv.org/abs/2006.07906
-- J. Leskovec and A. Krevl, SNAP Datasets: Stanford Large Network Dataset Collection, 6 2014. [Online].
-  Available: http://snap.stanford.edu/data
+### Core Theory
+* **Kempe, D., Kleinberg, J., & Tardos, E. (2003).** *Maximizing the Spread of Influence through a Social Network.* Proceedings of the 9th ACM SIGKDD. [[Link](https://dl.acm.org/doi/abs/10.1145/956750.956769)]
+
+### Fairness in Influence Maximisation
+* **Tsang, A., et al. (2019).** *Group-Fairness in Influence Maximization.* [[arXiv](http://arxiv.org/abs/1903.00967)]
+* **Ma, K., et al. (2023).** *Fair Influence Maximization in Social Networks: A Community-Based Evolutionary Algorithm.* [[arXiv](http://arxiv.org/abs/2311.14288)]
+* **Rahmattalabi, A., et al. (2020).** *Fair Influence Maximization: A Welfare Optimization Approach.* [[arXiv](http://arxiv.org/abs/2006.07906)]
+  
+### Budgeted Influence Maximisation
+* **Lozano-Osorio, I., et al. (2023).** *An efficient and effective GRASP algorithm for the Budget Influence Maximization Problem* [[Springer](https://link.springer.com/article/10.1007/s12652-023-04680-z)]
+
+### Datasets
+* **Leskovec, J., & Krevl, A. (2014).** *SNAP Datasets: Stanford Large Network Dataset Collection.* [[Link](http://snap.stanford.edu/data)]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
