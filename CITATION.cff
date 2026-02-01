@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this algorithm, please cite it as below."
+authors:
+- family-names: "Hogarty"
+  given-names: "Jacob"
+title: "Fair Influence Spread with Non-Uniform Costs in Social Networks"
+version: 1.0.0
+date-released: 2026-02-01
+url: "https://github.com/jacobhogarty/fairim-nu-cost"
+preferred-citation:
+  type: thesis
+  authors:
+  - family-names: "Hogarty"
+    given-names: "Jacob"
+  title: "Fair Influence Spread with Non-Uniform Costs in Social Networks"
+  school: "University of Warwick"
+  year: 2026
+  address: "London, England"
