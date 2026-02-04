@@ -211,7 +211,7 @@ This project is inspired by and builds upon the following key works:
 * **Tang, J, et al. (2020).** *Revisiting Modified Greedy Algorithm for Monotone Submodular Maximization with a Knapsack Constraint.* [[arXiv](https://arxiv.org/abs/2008.05391)]
 
 ### Fairness in Influence Maximisation
-* **Tsang, A., et al. (2019).** *Group-Fairness in Influence Maximization.* [[arXiv](http://arxiv.org/abs/1903.00967)]https://arxiv.org/abs/2010.07431
+* **Tsang, A., et al. (2019).** *Group-Fairness in Influence Maximization.* [[arXiv](http://arxiv.org/abs/1903.00967)]https://arxiv.org/abs/2010.07431]
 * **Ma, K., et al. (2023).** *Fair Influence Maximization in Social Networks: A Community-Based Evolutionary Algorithm.* [[arXiv](http://arxiv.org/abs/2311.14288)]
 * **Rahmattalabi, A., et al. (2020).** *Fair Influence Maximization: A Welfare Optimization Approach.* [[arXiv](http://arxiv.org/abs/2006.07906)]
 * **Halabi, M., et al. (2020).** *Fairness in Streaming Submodular Maximization: Algorithms and Hardness.* [[arXiv](https://arxiv.org/abs/2010.07431)]
