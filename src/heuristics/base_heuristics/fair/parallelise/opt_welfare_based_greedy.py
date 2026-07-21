@@ -25,7 +25,7 @@ class CacheStats:
         return self.hits / t if t else 0.0
 
 
-class OptimizedWelfareGreedy:
+class OptimisedWelfareGreedy:
     """
     Optimised Welfare-Based Greedy
     """
@@ -202,7 +202,7 @@ def opt_welfare_greedy(
     """
     Optimised Welfare-Based Greedy with CELF++ and caching.
     """
-    opt = OptimizedWelfareGreedy(
+    opt = OptimisedWelfareGreedy(
         graph=graph,
         k=k,
         alpha=alpha,
