@@ -13,7 +13,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 [project.urls]
-Homepage = "https://github.com/Cabin320/fairim-nu-cost"
+Homepage = "https://github.com/jacobhogarty/fairim-nu-cost"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
