@@ -3,7 +3,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/Cabin320/fair_influence_maximisation">
+  <a href="https://github.com/jacobhogarty/fair_influence_maximisation">
     <img src="images/uow_logo.png" alt="Logo" width="250" height="300">
   </a>
 
@@ -13,8 +13,8 @@
     A Python-based project developing heuristic algorithms for cost-sensitive, fair influence maximisation in social networks.
     <br />
     <br />
-    <a href="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml">
-        <img src="https://github.com/Cabin320/fair_influence_maximisation/actions/workflows/test.yml/badge.svg" alt="build"/></a>
+    <a href="https://github.com/jacobhogarty/fair_influence_maximisation/actions/workflows/test.yml">
+        <img src="https://github.com/jacobhogarty/fair_influence_maximisation/actions/workflows/test.yml/badge.svg" alt="build"/></a>
     <a href="https://img.shields.io/badge/linting-flake8-blue">
         <img src="https://img.shields.io/badge/linting-flake8-blue" alt="linter"/></a>
     <a href="https://img.shields.io/badge/python-3.12-blue&logoColor=white">
@@ -127,7 +127,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 1. Clone the Repository:
 
 ```bash
-git clone https://github.com/Cabin320/fairim-nu-cost.git
+git clone https://github.com/jacobhogarty/fairim-nu-cost.git
 cd fairim-nu-cost
 ```
 
